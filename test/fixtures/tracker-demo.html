@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tracker Shield Live Test — ScamLens</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 520px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    h1 { margin: 0 0 12px 0; font-size: 22px; }
+    p { color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
+    .btn {
+      background: #6366f1;
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn:hover { background: #4f46e5; }
+    #log {
+      margin-top: 20px;
+      text-align: left;
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #cbd5e1;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">🛡️ TRACKER SHIELD TEST</div>
+    <h1>Tracker Interception Benchmark</h1>
+    <p>Click the button below to simulate third-party tracker requests (DoubleClick, Criteo, Taboola). When the ScamLens Tracker Shield is <strong>ON</strong>, Chrome declarativeNetRequest will block them with <code>net::ERR_BLOCKED_BY_CLIENT</code>.</p>
+    <button class="btn" id="btn-fire">Trigger Tracker Requests 📡</button>
+    <div id="log">Console output will appear here...</div>
+  </div>
+
+  <script>
+    const trackers = [
+      'https://ad.doubleclick.net/ddm/track.js',
+      'https://static.criteo.net/ld/ld.js',
+      'https://trc.taboola.com/123/log/3/unip',
+      'https://secure.adnxs.com/seg?add=1'
+    ];
+
+    const logEl = document.getElementById('log');
+    function log(msg) {
+      logEl.innerHTML += `<div>${msg}</div>`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    document.getElementById('btn-fire').onclick = () => {
+      log('--- Firing 4 tracker requests ---');
+      trackers.forEach(url => {
+        fetch(url, { mode: 'no-cors' })
+          .then(() => log(`⚠️ Request allowed: ${url.split('/')[2]}`))
+          .catch(e => log(`🛡️ BLOCKED by ScamLens Shield: ${url.split('/')[2]} (${e.message})`));
+      });
+    };
+  </script>
+</body>
+</html>

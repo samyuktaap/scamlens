@@ -76,6 +76,25 @@
     .brand-title span {
       color: #ef4444;
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      border-radius: 6px;
+      padding: 3px 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
     .offline-tag {
       font-size: 10px;
       font-weight: 700;
@@ -85,6 +104,137 @@
       border-radius: 12px;
       color: #94a3b8;
     }
+
+    .source-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+      margin-top: 6px;
+      background: rgba(255, 255, 255, 0.07);
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .source-badge.source-gemini {
+      background: rgba(139, 92, 246, 0.18);
+      color: #c4b5fd;
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+
+    /* ── Settings Drawer ── */
+    .settings-drawer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #0f172a;
+      z-index: 100;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-title {
+      font-size: 14px;
+      font-weight: 750;
+      color: #ffffff;
+    }
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 6px;
+    }
+    .close-btn:hover { color: #ffffff; }
+    .form-group {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+    }
+    .input-field {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 9px;
+      font-size: 11.5px;
+      color: #f1f5f9;
+      font-family: inherit;
+      outline: none;
+    }
+    .input-field:focus {
+      border-color: #6366f1;
+    }
+    .field-hint {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .status-msg {
+      font-size: 11px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: none;
+    }
+    .status-msg.success {
+      display: block;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-msg.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .settings-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+    }
+    .btn-secondary {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      flex: 1;
+      background: #4f46e5;
+      border: 1px solid #6366f1;
+      color: #ffffff;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-primary:hover { background: #4338ca; }
 
     /* ── Verdict Hero Card ── */
     .verdict-card {
@@ -351,8 +501,40 @@
       <img src="../../public/icon128.png" alt="ScamLens" class="brand-logo">
       <div class="brand-title">Scam<span>Lens</span></div>
     </div>
-    <div class="offline-tag" id="mode-tag">Offline First</div>
+    <div class="header-actions">
+      <div class="offline-tag" id="mode-tag">Offline First</div>
+      <button class="icon-btn" id="btn-settings" type="button" aria-label="Backend & AI Settings" title="Backend & AI Settings">⚙️</button>
+    </div>
   </header>
+
+  <!-- Settings Drawer View -->
+  <div class="settings-drawer" id="settings-drawer" style="display: none;" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="settings-header">
+      <div class="settings-title">⚙️ Backend & AI Explainer</div>
+      <button class="close-btn" id="btn-close-settings" type="button" aria-label="Close settings">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="form-group">
+        <label for="backend-url-input">Apps Script Web App or Server URL</label>
+        <input type="text" id="backend-url-input" class="input-field" placeholder="https://script.google.com/macros/s/.../exec">
+        <div class="field-hint">Defaults to local server or offline deterministic rules if empty.</div>
+      </div>
+      <div class="form-group">
+        <label for="shared-token-input">Backend Auth Token</label>
+        <input type="text" id="shared-token-input" class="input-field" placeholder="scamlens-demo-token">
+      </div>
+      <div class="form-group">
+        <label for="gemini-key-input">Optional Gemini API Key</label>
+        <input type="password" id="gemini-key-input" class="input-field" placeholder="AI Studio Free API Key">
+        <div class="field-hint">Rules decide score; Gemini only rewrites explanations.</div>
+      </div>
+      <div id="backend-status-msg" class="status-msg"></div>
+      <div class="settings-buttons">
+        <button type="button" id="btn-test-backend" class="btn-secondary">Test Connection</button>
+        <button type="button" id="btn-save-settings" class="btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Verdict Hero Region (Screen Reader Accessible) -->
   <section class="verdict-card state-safe" id="verdict-card" role="region" aria-live="polite" aria-label="Site Security Verdict">
@@ -372,6 +554,8 @@
     <div class="explanation-box" id="explanation-text">
       Scanning link destination and in-page form targets...
     </div>
+
+    <div class="source-badge" id="source-badge">🛡️ Deterministic Rules</div>
   </section>
 
   <!-- Evidence Section -->

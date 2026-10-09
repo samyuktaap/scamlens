@@ -562,3 +562,5 @@ function generateTemplateExplanation(verdict, score, signals, host, isAllowliste
 
   return `No deceptive signals, brand mimicry, or high-risk indicators were detected for ${host}.`;
 }
+
+export { generateAdvice as getVerdictAdvice, generateTemplateExplanation };

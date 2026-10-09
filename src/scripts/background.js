@@ -276,7 +276,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep channel open for async response
   }
 
-  // Deep Check request (RDAP / DNS lookup enrichment)
+  // Deep Check request (DNS lookup + Apps Script / Gemini Explainer)
   if (message.type === 'RUN_DEEP_CHECK') {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       const activeTab = tabs[0];
@@ -289,7 +289,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const url = new URL(activeTab.url);
         const host = url.hostname;
 
-        // Perform Google Public DNS over HTTPS lookup for MX records (zero key required)
+        // 1. Query Google Public DNS over HTTPS for MX records
         let hasMxRecords = true;
         try {
           const dnsRes = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=MX`, {
@@ -303,16 +303,110 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         const externalSignals = {
           hasMxRecords,
-          safeBrowsingMatch: false // Opt-in or configured via Apps Script
+          safeBrowsingMatch: false
         };
 
         tabExternalSignals.set(activeTab.id, externalSignals);
         const enriched = await evaluateTabScamLens(activeTab.id, activeTab.url);
+
+        // 2. Query Google Apps Script Web App or Local Fallback Server for AI explanation
+        const { backendUrl, sharedToken = 'scamlens-demo-token', geminiApiKey } = await getStorage(['backendUrl', 'sharedToken', 'geminiApiKey']);
+        
+        const candidateEndpoints = [];
+        if (backendUrl && backendUrl.trim()) {
+          candidateEndpoints.push(backendUrl.trim());
+        }
+        candidateEndpoints.push('http://localhost:3000/api/check'); // local demo fallback
+
+        let aiEnrichment = null;
+        for (const endpoint of candidateEndpoints) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4500);
+
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token: sharedToken,
+                url: activeTab.url,
+                verdict: enriched.verdict,
+                score: enriched.score,
+                evidence: enriched.signals.map(s => s.evidence || s.label),
+                apiKey: geminiApiKey,
+                forceRefresh: Boolean(message.forceRefresh)
+              }),
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (res.ok) {
+              aiEnrichment = await res.json();
+              break;
+            }
+          } catch (netErr) {
+            // Server unavailable, attempt next or fallback
+          }
+        }
+
+        if (aiEnrichment && aiEnrichment.plainExplanation) {
+          enriched.plainExplanation = aiEnrichment.plainExplanation;
+          if (aiEnrichment.advice) {
+            enriched.advice = Array.isArray(aiEnrichment.advice) ? aiEnrichment.advice : [aiEnrichment.advice];
+          }
+          enriched.source = aiEnrichment.source || 'gemini';
+          enriched.cached = Boolean(aiEnrichment.cached);
+        } else {
+          enriched.source = 'rules-engine';
+        }
+
+        tabVerdicts.set(activeTab.id, enriched);
         sendResponse(enriched);
       } catch (err) {
         sendResponse({ error: err.message });
       }
     });
+    return true;
+  }
+
+  // Backend Connectivity Verification
+  if (message.type === 'TEST_BACKEND_CONNECTION') {
+    (async () => {
+      const { url, token, geminiApiKey } = message;
+      if (!url) {
+        sendResponse({ success: false, error: 'No URL specified' });
+        return;
+      }
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        // Try health check GET first, then fallback to POST test
+        const testRes = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: token || 'scamlens-demo-token',
+            url: 'https://google.com',
+            verdict: 'Safe',
+            score: 0,
+            evidence: ['Test ping'],
+            apiKey: geminiApiKey
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (testRes.ok) {
+          const data = await testRes.json();
+          sendResponse({ success: true, data });
+        } else {
+          sendResponse({ success: false, status: testRes.status, error: `HTTP ${testRes.status}` });
+        }
+      } catch (e) {
+        sendResponse({ success: false, error: e.message });
+      }
+    })();
     return true;
   }
 

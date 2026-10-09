@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DataShadow — Take Back Your Privacy</title>
+    <title>ScamLens — Rules Decide. AI Explains. | Real-Time Link Threat Detection</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
@@ -1321,6 +1321,267 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ===== LIVE SCAMLENS SCANNER STYLES ===== */
+        .scanner-section {
+            padding: 3rem 0 5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .scanner-card {
+            background: linear-gradient(180deg, #16120b, #100d08);
+            border: 1px solid rgba(193, 127, 36, 0.35);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(193, 127, 36, 0.12);
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .scanner-header-tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: rgba(193, 127, 36, 0.1);
+            border: 1px solid rgba(193, 127, 36, 0.2);
+            padding: 4px 12px;
+            border-radius: 4px;
+            margin-bottom: 0.8rem;
+        }
+        .scanner-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--highlight);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+        .scanner-subtitle {
+            font-size: 1rem;
+            color: var(--text);
+            margin-bottom: 1.8rem;
+            line-height: 1.5;
+        }
+        .scanner-input-wrap {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+        .scanner-input {
+            flex: 1;
+            background: #0d0a06;
+            border: 1px solid rgba(193, 127, 36, 0.4);
+            border-radius: 8px;
+            padding: 0.9rem 1.4rem;
+            font-size: 1rem;
+            color: #ffffff;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .scanner-input:focus {
+            border-color: #c17f24;
+            box-shadow: 0 0 18px rgba(193, 127, 36, 0.35);
+        }
+        .presets-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 0.6rem;
+        }
+        .presets-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 2rem;
+        }
+        .preset-chip {
+            background: rgba(193, 127, 36, 0.08);
+            border: 1px solid rgba(193, 127, 36, 0.22);
+            color: #e5d5be;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-chip:hover {
+            background: rgba(193, 127, 36, 0.25);
+            border-color: #c17f24;
+            color: #ffffff;
+        }
+        .scanner-results-card {
+            background: #0d0a06;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.8rem;
+            transition: all 0.3s;
+        }
+        .scanner-results-card.state-safe {
+            border-color: rgba(16, 185, 129, 0.5);
+            background: linear-gradient(180deg, #0d0a06 0%, rgba(16, 185, 129, 0.08) 100%);
+        }
+        .scanner-results-card.state-suspicious {
+            border-color: rgba(245, 158, 11, 0.5);
+            background: linear-gradient(180deg, #0d0a06 0%, rgba(245, 158, 11, 0.08) 100%);
+        }
+        .scanner-results-card.state-dangerous {
+            border-color: rgba(239, 68, 68, 0.5);
+            background: linear-gradient(180deg, #0d0a06 0%, rgba(239, 68, 68, 0.08) 100%);
+        }
+        .res-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .verdict-tag {
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+        }
+        .state-safe .verdict-tag { color: #10b981; }
+        .state-suspicious .verdict-tag { color: #f59e0b; }
+        .state-dangerous .verdict-tag { color: #ef4444; }
+        .score-pill-res {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            font-size: 0.9rem;
+        }
+        .score-bar-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 1.2rem;
+        }
+        .score-bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+        .source-pill {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        .source-pill.source-rules {
+            background: rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .source-pill.source-gemini {
+            background: rgba(139, 92, 246, 0.2);
+            color: #c4b5fd;
+            border: 1px solid rgba(139, 92, 246, 0.4);
+        }
+        .explanation-res {
+            font-size: 1.05rem;
+            color: #f1f5f9;
+            line-height: 1.55;
+            margin-bottom: 1.4rem;
+        }
+        .sec-sub-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin: 1rem 0 0.5rem;
+        }
+        .signals-list-wrap {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 1.2rem;
+        }
+        .sig-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #e2e8f0;
+        }
+        .sig-empty {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            padding: 6px 0;
+        }
+        .sig-tag {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        .advice-list-wrap {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 1.2rem;
+        }
+        .adv-item {
+            background: rgba(193, 127, 36, 0.1);
+            border-left: 3px solid #c17f24;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #f5e6c8;
+        }
+        .gemini-action-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 1.2rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            flex-wrap: wrap;
+        }
+        .btn-gemini-ai {
+            background: linear-gradient(135deg, #4338ca, #312e81);
+            border: 1px solid #6366f1;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .btn-gemini-ai:hover:not(:disabled) {
+            background: #4f46e5;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+        .btn-gemini-ai:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .deep-status {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .deep-status.active {
+            color: #818cf8;
+        }
     </style>
 </head>
 
@@ -1367,24 +1628,22 @@
 
     <nav>
         <div class="container">
-            <a href="#" class="logo">DataShadow</a>
+            <a href="#" class="logo">Scam<span style="color:#ef4444;">Lens</span></a>
             <div class="nav-links">
-                <a href="#about">About</a>
+                <a href="#scanner">Live Scanner</a>
+                <a href="#how">How It Works</a>
                 <a href="#features">Features</a>
-                <a href="#how">How it works</a>
-                <a href="#install">Install</a>
+                <a href="#install">Install Extension</a>
                 <a href="#faq">FAQ</a>
             </div>
             <div style="display:flex;align-items:center;gap:1rem;">
                 <button id="theme-toggle" onclick="toggleTheme()"
                     style="background:none;border:1px solid var(--border);color:var(--highlight);width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:0.3s;"
                     title="Toggle light/dark mode">🌙</button>
-                <button class="btn-accent" onclick="handleDownload()">Get DataShadow</button>
+                <button class="btn-accent" onclick="handleDownload()">Get ScamLens</button>
             </div>
         </div>
     </nav>
-
-
 
     <section class="hero" style="position: relative; overflow: hidden;">
         <!-- Diagonal accent lines -->
@@ -1408,43 +1667,105 @@
         <div class="container">
             <div class="hero-grid">
                 <div>
-                    <div class="hero-badge">SECURE & PRIVATE</div>
-                    <h1>Take Back Your <span>Privacy</span></h1>
-                    <p>Stop websites from tracking your every move. DataShadow exposes hidden surveillance and blocks
-                        data-hungry scripts instantly.</p>
+                    <div class="hero-badge">RULES DECIDE. AI EXPLAINS.</div>
+                    <h1>Stop Scams Before <span>They Strike</span></h1>
+                    <p>ScamLens inspects deceptive links and form targets in real-time. Deterministic rules decide verdicts; Google Gemini translates technical security signals into empathetic, plain-language advice.</p>
                     <div class="hero-stats">
-                        <div class="stat-pill">🕵️ Exposes Shadow Data</div>
-                        <div class="stat-pill">🔒 Zero Data Leaves Your Device</div>
-                        <div class="stat-pill">⚡ Manifest V3</div>
+                        <div class="stat-pill">🛡️ 11-Signal Risk Engine</div>
+                        <div class="stat-pill">✨ Google Gemini Flash Explainer</div>
+                        <div class="stat-pill">⚡ 100% Offline First</div>
+                        <div class="stat-pill">🔒 Tracker & Fingerprint Shield</div>
                     </div>
-                    <button class="btn-accent" onclick="handleDownload()">Get DataShadow</button>
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                        <a href="#scanner" class="btn-accent" style="display:inline-block;text-align:center;">Test Live Scanner ↓</a>
+                        <button class="btn-accent" style="background:transparent;border:1px solid var(--accent);color:var(--highlight);" onclick="handleDownload()">Download Extension</button>
+                    </div>
                 </div>
                 <div class="mockup-wrap">
                     <div class="extension-mockup">
                         <div class="popup-header">
-                            <div class="popup-logo">DataShadow</div>
-                            <div class="popup-status">PROTECTED</div>
+                            <div class="popup-logo">Scam<span style="color:#ef4444;">Lens</span></div>
+                            <div class="popup-status">ACTIVE</div>
                         </div>
                         <div class="popup-stat">
-                            <span class="stat-label">Trackers Blocked</span>
-                            <span class="stat-val">142</span>
+                            <span class="stat-label">Current Tab Verdict</span>
+                            <span class="stat-val" style="color:#10b981;font-size:1.5rem;">SAFE (0/100)</span>
                             <div class="progress-bar">
-                                <div class="progress-fill"></div>
+                                <div class="progress-fill" style="width:100%;background:#10b981;"></div>
                             </div>
                         </div>
                         <div class="popup-info-row">
-                            <span>Sites Scanned Today:</span>
-                            <span style="color:white;font-weight:700;">24</span>
+                            <span>Signals Evaluated:</span>
+                            <span style="color:white;font-weight:700;">11/11 Local Rules</span>
                         </div>
                         <div class="risk-badges">
-                            <div class="r-badge r-safe">SAFE</div>
-                            <div class="r-badge r-mod">MODERATE</div>
-                            <div class="r-badge r-dan">DANGEROUS</div>
+                            <div class="r-badge r-safe" style="border:2px solid #10b981;font-weight:900;">SAFE</div>
+                            <div class="r-badge r-mod" style="opacity:0.4;">SUSPICIOUS</div>
+                            <div class="r-badge r-dan" style="opacity:0.4;">DANGEROUS</div>
                         </div>
                         <div class="popup-footer">
                             <div class="pulse-dot"></div>
-                            SHIELD ACTIVE
+                            SHIELD & TRACKER PROTECTION ON
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== INTERACTIVE LIVE SCAMLENS SCANNER ===== -->
+    <section class="scanner-section" id="scanner">
+        <div class="container">
+            <div class="scanner-card">
+                <div class="scanner-header-tag">Live Engine Playground</div>
+                <h2 class="scanner-title">Scan Any Link Instantly</h2>
+                <p class="scanner-subtitle">
+                    Type or paste any URL below to see the deterministic rules engine and Gemini AI explainer in action.
+                    Works 100% offline with zero setup required.
+                </p>
+
+                <div class="scanner-input-wrap">
+                    <input type="text" id="scanner-url-input" class="scanner-input" placeholder="Paste any link (e.g., http://login.micros0ft-verify.com/account/login)" aria-label="URL to scan">
+                    <button type="button" id="scanner-btn" class="btn-accent">Scan Link ⚡</button>
+                </div>
+
+                <div class="presets-label">Quick Test Scenarios for Evaluators:</div>
+                <div class="presets-wrap" id="scanner-presets">
+                    <!-- Populated by web-scanner.js -->
+                </div>
+
+                <!-- Live Results Display Card -->
+                <div id="scanner-results" class="scanner-results-card state-dangerous" style="display: block;">
+                    <div class="res-top">
+                        <div class="verdict-tag" id="scanner-verdict">DANGEROUS</div>
+                        <div class="score-pill-res">Threat Score: <span id="scanner-score">85/100</span></div>
+                    </div>
+
+                    <div class="score-bar-track">
+                        <div class="score-bar-fill" id="scanner-score-bar" style="width: 85%; background: #ef4444;"></div>
+                    </div>
+
+                    <div class="source-pill source-rules" id="scanner-source">🛡️ Deterministic Rules Engine</div>
+
+                    <div class="explanation-res" id="scanner-explanation">
+                        Domain mimics known brand "Microsoft", high-risk top level domain, and credential form targets external host.
+                    </div>
+
+                    <div class="sec-sub-title">Detected Signals Breakdown:</div>
+                    <ul class="signals-list-wrap" id="scanner-signals">
+                        <!-- Populated by web-scanner.js -->
+                    </ul>
+
+                    <div class="sec-sub-title">Actionable Advice:</div>
+                    <ul class="advice-list-wrap" id="scanner-advice">
+                        <!-- Populated by web-scanner.js -->
+                    </ul>
+
+                    <div class="gemini-action-wrap">
+                        <button type="button" id="scanner-gemini-btn" class="btn-gemini-ai">
+                            ✨ Run Gemini AI Explainer
+                        </button>
+                        <span id="scanner-deep-status" class="deep-status"></span>
                     </div>
                 </div>
             </div>
@@ -2015,8 +2336,8 @@
     <div class="modal-overlay" id="installModal" onclick="if(event.target===this)closeInstallModal()">
         <div class="modal-box">
             <button class="modal-close" onclick="closeInstallModal()">✕</button>
-            <div class="modal-title">🎉 Download Started!</div>
-            <div class="modal-subtitle">Follow these steps to install DataShadow in Chrome.</div>
+            <div class="modal-title">🎉 Install ScamLens in 3 Easy Steps</div>
+            <div class="modal-subtitle">Load ScamLens as an unpacked Chrome extension:</div>
             <div class="step-dots" id="stepDots"></div>
             <div id="stepsBody">
                 <div class="step-sidebar" id="stepSidebar"></div>
@@ -2030,11 +2351,14 @@
             <div class="done-banner" id="doneBanner">
                 <div class="done-icon">🛡️</div>
                 <div class="done-title">You're Protected!</div>
-                <div class="done-sub">DataShadow is now active in your Chrome browser.<br>Click the shield icon in your toolbar to get started.</div>
+                <div class="done-sub">ScamLens is now active in your Chrome browser.<br>Click the shield icon in your toolbar to evaluate links and block trackers.</div>
                 <button class="modal-btn modal-btn-primary" style="margin-top:1.5rem;" onclick="closeInstallModal()">Close Guide</button>
             </div>
         </div>
     </div>
+
+    <!-- Web Scanner Controller -->
+    <script type="module" src="./src/scripts/web-scanner.js"></script>
 </body>
 
 </html>

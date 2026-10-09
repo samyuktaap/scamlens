@@ -41,19 +41,30 @@ ScamLens is an intelligent browser extension (with offline-first rule verificati
 
 ## Getting Started
 
-### Development
+### Development & Quick Commands
 ```bash
-# Install dependencies
-npm install
-
-# Run unit tests
+# Run 45 unit and integration tests
 npm test
 
-# Build extension
+# Build extension into dist/
 npm run build
+
+# Start live web scanner & landing page preview (http://localhost:5173)
+npm run dev
+
+# Start zero-dependency local fallback server (http://localhost:3000)
+npm run server
 ```
 
 ### Loading the Extension in Chrome
 1. Navigate to `chrome://extensions/` in Chrome.
 2. Enable **Developer mode** in the top-right corner.
 3. Click **Load unpacked** and select the `dist/` directory generated after running `npm run build`.
+
+---
+
+## 📚 Project Documentation & Quick Links
+- **[DEMO.md](file:///c:/Users/Samyuktaa%20p/OneDrive/Desktop/scam%20lens/DEMO.md)**: 2-minute pitch outline, judge walkthrough, and live scenario checklist.
+- **[Google Apps Script Backend Guide](file:///c:/Users/Samyuktaa%20p/OneDrive/Desktop/scam%20lens/backend/apps-script/README.md)**: Step-by-step 3-minute deployment guide for the free Google Apps Script web app.
+- **[Local Test Fixtures](file:///c:/Users/Samyuktaa%20p/OneDrive/Desktop/scam%20lens/test/fixtures/)**: Safe benchmarks, phishing simulation with cross-domain forms, and tracker blocking tests.
+

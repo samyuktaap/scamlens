@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const verdictIconEl = document.getElementById('verdict-icon');
   const threatScoreEl = document.getElementById('threat-score');
   const explanationEl = document.getElementById('explanation-text');
+  const sourceBadgeEl = document.getElementById('source-badge');
   const modeTagEl = document.getElementById('mode-tag');
   const evidenceListEl = document.getElementById('evidence-list');
   const evidenceCountEl = document.getElementById('evidence-count');
@@ -26,6 +27,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnNuke = document.getElementById('btn-nuke');
   const btnDashboard = document.getElementById('btn-dashboard');
   const btnReport = document.getElementById('btn-report');
+
+  // Settings DOM
+  const btnSettings = document.getElementById('btn-settings');
+  const settingsDrawer = document.getElementById('settings-drawer');
+  const btnCloseSettings = document.getElementById('btn-close-settings');
+  const backendUrlInput = document.getElementById('backend-url-input');
+  const sharedTokenInput = document.getElementById('shared-token-input');
+  const geminiKeyInput = document.getElementById('gemini-key-input');
+  const btnSaveSettings = document.getElementById('btn-save-settings');
+  const btnTestBackend = document.getElementById('btn-test-backend');
+  const backendStatusMsg = document.getElementById('backend-status-msg');
 
   let currentAnalysis = null;
   let activeTabUrl = '';
@@ -48,7 +60,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     targetDomainEl.textContent = host;
     verdictTextEl.textContent = verdict;
     threatScoreEl.textContent = score;
-    explanationEl.textContent = analysis.explanation || 'Rules evaluation completed.';
+    explanationEl.textContent = analysis.plainExplanation || analysis.explanation || 'Rules evaluation completed.';
+
+    // Source Badge: Rules vs Gemini
+    if (sourceBadgeEl) {
+      if (analysis.source === 'gemini') {
+        sourceBadgeEl.className = 'source-badge source-gemini';
+        sourceBadgeEl.textContent = '✨ AI Explained (Gemini)';
+      } else {
+        sourceBadgeEl.className = 'source-badge';
+        sourceBadgeEl.textContent = '🛡️ Deterministic Rules';
+      }
+    }
 
     // Accessible Icon + Text
     if (verdict === 'Dangerous') {
@@ -60,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (modeTagEl) {
-      modeTagEl.textContent = analysis.mode === 'online' ? 'Online Enriched' : 'Offline First';
+      modeTagEl.textContent = (analysis.mode === 'online' || analysis.source === 'gemini') ? 'Online Enriched' : 'Offline First';
     }
 
     // 2. Render Evidence List
@@ -228,4 +251,61 @@ document.addEventListener('DOMContentLoaded', async () => {
   btnReport.onclick = () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/report.html') });
   };
+
+  // ── 7. Settings Drawer Logic ──
+  if (btnSettings && settingsDrawer) {
+    btnSettings.onclick = () => {
+      // Load saved settings
+      chrome.storage.local.get(['backendUrl', 'sharedToken', 'geminiApiKey'], (data) => {
+        if (backendUrlInput) backendUrlInput.value = data.backendUrl || '';
+        if (sharedTokenInput) sharedTokenInput.value = data.sharedToken || '';
+        if (geminiKeyInput) geminiKeyInput.value = data.geminiApiKey || '';
+      });
+      backendStatusMsg.style.display = 'none';
+      settingsDrawer.style.display = 'flex';
+    };
+
+    btnCloseSettings.onclick = () => {
+      settingsDrawer.style.display = 'none';
+    };
+
+    btnSaveSettings.onclick = () => {
+      const backendUrl = (backendUrlInput?.value || '').trim();
+      const sharedToken = (sharedTokenInput?.value || '').trim();
+      const geminiApiKey = (geminiKeyInput?.value || '').trim();
+
+      chrome.storage.local.set({ backendUrl, sharedToken, geminiApiKey }, () => {
+        backendStatusMsg.className = 'status-msg success';
+        backendStatusMsg.textContent = 'Settings saved successfully!';
+        setTimeout(() => {
+          settingsDrawer.style.display = 'none';
+        }, 800);
+      });
+    };
+
+    btnTestBackend.onclick = () => {
+      const url = (backendUrlInput?.value || '').trim() || 'http://localhost:3000/api/check';
+      const token = (sharedTokenInput?.value || '').trim() || 'scamlens-demo-token';
+      const geminiApiKey = (geminiKeyInput?.value || '').trim();
+
+      backendStatusMsg.className = 'status-msg';
+      backendStatusMsg.style.display = 'block';
+      backendStatusMsg.textContent = 'Testing connection...';
+
+      chrome.runtime.sendMessage({
+        type: 'TEST_BACKEND_CONNECTION',
+        url,
+        token,
+        geminiApiKey
+      }, (res) => {
+        if (res && res.success) {
+          backendStatusMsg.className = 'status-msg success';
+          backendStatusMsg.textContent = `Connected! Source: ${res.data?.source || 'ok'}`;
+        } else {
+          backendStatusMsg.className = 'status-msg error';
+          backendStatusMsg.textContent = `Failed: ${res?.error || 'Unreachable'}`;
+        }
+      });
+    };
+  }
 });
