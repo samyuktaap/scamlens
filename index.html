@@ -1631,16 +1631,17 @@
             <a href="#" class="logo">Scam<span style="color:#ef4444;">Lens</span></a>
             <div class="nav-links">
                 <a href="#scanner">Live Scanner</a>
-                <a href="#how">How It Works</a>
-                <a href="#features">Features</a>
+                <a href="./src/pages/dashboard.html" target="_blank" style="color:#c17f24;font-weight:700;">📊 Dashboard App</a>
+                <a href="./src/pages/popup.html" target="_blank">🛡️ Popup UI</a>
+                <a href="./src/pages/report.html" target="_blank">📄 Safety Report</a>
+                <a href="./src/pages/whatif.html" target="_blank">🧪 Risk Sandbox</a>
                 <a href="#install">Install Extension</a>
-                <a href="#faq">FAQ</a>
             </div>
             <div style="display:flex;align-items:center;gap:1rem;">
                 <button id="theme-toggle" onclick="toggleTheme()"
                     style="background:none;border:1px solid var(--border);color:var(--highlight);width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:0.3s;"
                     title="Toggle light/dark mode">🌙</button>
-                <button class="btn-accent" onclick="handleDownload()">Get ScamLens</button>
+                <a href="./src/pages/dashboard.html" class="btn-accent" style="padding:0.6rem 1.4rem;">Open Dashboard ↗</a>
             </div>
         </div>
     </nav>
@@ -1676,9 +1677,10 @@
                         <div class="stat-pill">⚡ 100% Offline First</div>
                         <div class="stat-pill">🔒 Tracker & Fingerprint Shield</div>
                     </div>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                        <a href="#scanner" class="btn-accent" style="display:inline-block;text-align:center;">Test Live Scanner ↓</a>
-                        <button class="btn-accent" style="background:transparent;border:1px solid var(--accent);color:var(--highlight);" onclick="handleDownload()">Download Extension</button>
+                    <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
+                        <a href="./src/pages/dashboard.html" target="_blank" class="btn-accent" style="display:inline-block;text-align:center;">📊 Open Dashboard App</a>
+                        <a href="#scanner" class="btn-accent" style="display:inline-block;text-align:center;background:rgba(193, 127, 36, 0.2);border:1px solid var(--accent);">Test Live Scanner ↓</a>
+                        <a href="./src/pages/popup.html" target="_blank" class="btn-accent" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--highlight);">🛡️ Popup UI</a>
                     </div>
                 </div>
                 <div class="mockup-wrap">
