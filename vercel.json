@@ -1,0 +1,54 @@
+{
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/check",
+      "destination": "/api/check.js"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/src/pages/dashboard.html"
+    },
+    {
+      "source": "/pro",
+      "destination": "/src/pages/pro.html"
+    },
+    {
+      "source": "/whatif",
+      "destination": "/src/pages/whatif.html"
+    },
+    {
+      "source": "/history",
+      "destination": "/src/pages/history.html"
+    },
+    {
+      "source": "/report",
+      "destination": "/src/pages/report.html"
+    },
+    {
+      "source": "/onboard",
+      "destination": "/src/pages/onboard.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ]
+}
