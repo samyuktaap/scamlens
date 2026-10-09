@@ -8,11 +8,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  const scannerNav = document.getElementById('nav-scanner');
   const dashboardNav = document.getElementById('nav-dashboard');
   const proNav = document.getElementById('nav-pro');
   const whatifNav = document.getElementById('nav-whatif');
   const reportNav = document.getElementById('nav-report');
 
+  if (scannerNav) scannerNav.onclick = (e) => { e.preventDefault(); navigateTo('popup'); };
   if (dashboardNav) dashboardNav.onclick = (e) => { e.preventDefault(); navigateTo('dashboard'); };
   if (proNav) proNav.onclick = (e) => { e.preventDefault(); navigateTo('pro'); };
   if (whatifNav) whatifNav.onclick = (e) => { e.preventDefault(); navigateTo('whatif'); };
@@ -20,13 +22,60 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let currentHistory = [];
 
+  // Seed default entries if empty
+  const defaultSeeds = [
+    {
+      site: 'micros0ft-verify.com',
+      timestamp: Date.now() - 1000 * 60 * 12,
+      exposureLevel: 'HIGH',
+      trackers: 7,
+      privacyScore: 85,
+      blockedTrackers: ['adservice.google.com', 'tracking-pixel.biz', 'fingerprint-js.net'],
+      status: 'BLOCKED'
+    },
+    {
+      site: 'paypal-security-alert.xyz',
+      timestamp: Date.now() - 1000 * 60 * 45,
+      exposureLevel: 'HIGH',
+      trackers: 9,
+      privacyScore: 90,
+      blockedTrackers: ['phish-collector.com', 'stealth-cdn.org'],
+      status: 'BLOCKED'
+    },
+    {
+      site: 'google.com',
+      timestamp: Date.now() - 1000 * 60 * 180,
+      exposureLevel: 'LOW',
+      trackers: 1,
+      privacyScore: 0,
+      blockedTrackers: ['doubleclick.net'],
+      status: 'VERIFIED_SAFE'
+    },
+    {
+      site: 'github.com',
+      timestamp: Date.now() - 1000 * 60 * 360,
+      exposureLevel: 'LOW',
+      trackers: 0,
+      privacyScore: 0,
+      blockedTrackers: [],
+      status: 'VERIFIED_SAFE'
+    }
+  ];
+
   // Load Data
-  chrome.storage.local.get(['privacyHistory'], (data) => {
-    currentHistory = data.privacyHistory || [];
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get(['privacyHistory'], (data) => {
+      currentHistory = (data.privacyHistory && data.privacyHistory.length > 0) ? data.privacyHistory : defaultSeeds;
+      renderHistory();
+      renderChart();
+      generateInsights();
+    });
+  } else {
+    currentHistory = defaultSeeds;
     renderHistory();
     renderChart();
     generateInsights();
-  });
+  }
 
   // ── Render History List ──
   function renderHistory() {

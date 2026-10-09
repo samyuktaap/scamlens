@@ -11,7 +11,10 @@
     "scripting",
     "declarativeNetRequest",
     "declarativeNetRequestFeedback",
-    "webRequest"
+    "webRequest",
+    "contextMenus",
+    "notifications",
+    "clipboardRead"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -25,6 +28,7 @@
       "matches": ["<all_urls>"],
       "js": ["src/scripts/fingerprinter-shield.js"],
       "run_at": "document_start",
+      "world": "MAIN",
       "all_frames": true
     },
     {
@@ -42,7 +46,10 @@
     {
       "resources": [
         "src/pages/report.html",
-        "src/pages/dashboard.html"
+        "src/pages/dashboard.html",
+        "src/pages/pro.html",
+        "src/pages/history.html",
+        "src/pages/whatif.html"
       ],
       "matches": ["<all_urls>"]
     }

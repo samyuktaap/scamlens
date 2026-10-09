@@ -20,13 +20,6 @@
       --accent: #6366f1;
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation: none !important;
-        transition: none !important;
-      }
-    }
-
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -34,28 +27,30 @@
     }
 
     body {
-      width: 360px;
-      padding: 16px;
+      width: 390px;
+      max-height: 590px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 14px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg);
       color: var(--text-main);
       line-height: 1.4;
       font-size: 13px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.2) transparent;
     }
 
-    /* ── Focus Style (WCAG AA Compliance) ── */
-    :focus-visible {
-      outline: 2px solid #38bdf8;
-      outline-offset: 2px;
-    }
+    body::-webkit-scrollbar { width: 4px; }
+    body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 
     /* ── Header ── */
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 14px;
-      padding-bottom: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
       border-bottom: 1px solid var(--border);
     }
     .brand {
@@ -68,14 +63,12 @@
       height: 22px;
     }
     .brand-title {
-      font-weight: 800;
+      font-weight: 900;
       font-size: 16px;
       letter-spacing: -0.3px;
       color: #ffffff;
     }
-    .brand-title span {
-      color: #ef4444;
-    }
+    .brand-title span { color: #ef4444; }
     .header-actions {
       display: flex;
       align-items: center;
@@ -87,409 +80,280 @@
       color: #cbd5e1;
       border-radius: 6px;
       padding: 3px 6px;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .icon-btn:hover {
-      background: rgba(255, 255, 255, 0.16);
-      color: #ffffff;
-    }
-    .offline-tag {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      padding: 2px 7px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      color: #94a3b8;
-    }
+    .icon-btn:hover { background: rgba(255, 255, 255, 0.16); color: #ffffff; }
 
-    .source-badge {
-      display: inline-block;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 10px;
-      margin-top: 6px;
-      background: rgba(255, 255, 255, 0.07);
-      color: #94a3b8;
+    /* ── Feature Suite Navigation Hub ── */
+    .feature-suite-nav {
+      display: flex;
+      gap: 3px;
+      background: rgba(15, 23, 42, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 12px;
     }
-    .source-badge.source-gemini {
-      background: rgba(139, 92, 246, 0.18);
-      color: #c4b5fd;
-      border-color: rgba(139, 92, 246, 0.4);
-    }
-
-    /* ── Settings Drawer ── */
-    .settings-drawer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: #0f172a;
-      z-index: 100;
-      padding: 16px;
+    .suite-tab {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
-    }
-    .settings-header {
-      display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
+      gap: 2px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 5px 2px;
+      cursor: pointer;
+      color: #94a3b8;
+      transition: all 0.2s ease;
+      font-family: inherit;
     }
-    .settings-title {
-      font-size: 14px;
-      font-weight: 750;
+    .suite-tab:hover {
+      background: rgba(255, 255, 255, 0.08);
       color: #ffffff;
     }
-    .close-btn {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      font-size: 16px;
+    .suite-tab.active {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #a5b4fc;
+      font-weight: 700;
+    }
+    .suite-tab.highlight { color: #fbbf24; }
+    .tab-icon { font-size: 13px; }
+    .tab-text { font-size: 9.5px; font-weight: 700; white-space: nowrap; }
+
+    /* ── Panels ── */
+    .view-panel { display: none; animation: fadeIn 0.2s ease-out; }
+    .view-panel.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Panel Header & Fullscreen link ── */
+    .panel-view-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .panel-view-title { font-size: 12px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-open-tab {
+      font-size: 10.5px;
+      color: #38bdf8;
+      background: rgba(56,189,248,0.1);
+      border: 1px solid rgba(56,189,248,0.25);
+      padding: 2px 8px;
+      border-radius: 6px;
       cursor: pointer;
-      padding: 2px 6px;
+      text-decoration: none;
+      font-weight: 700;
     }
-    .close-btn:hover { color: #ffffff; }
-    .form-group {
-      margin-bottom: 12px;
-      text-align: left;
+    .btn-open-tab:hover { background: rgba(56,189,248,0.2); }
+
+    /* ── Scanner Elements ── */
+    .url-checker-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 10px;
+      padding: 8px 9px;
+      margin-bottom: 10px;
     }
-    .form-group label {
-      display: block;
-      font-size: 11px;
-      font-weight: 600;
-      color: #cbd5e1;
-      margin-bottom: 4px;
-    }
-    .input-field {
-      width: 100%;
-      background: rgba(0, 0, 0, 0.35);
+    .checker-input-row { display: flex; gap: 6px; }
+    .checker-input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.45);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 7px 9px;
+      padding: 6px 8px;
       font-size: 11.5px;
       color: #f1f5f9;
-      font-family: inherit;
       outline: none;
     }
-    .input-field:focus {
-      border-color: #6366f1;
-    }
-    .field-hint {
-      font-size: 10px;
-      color: var(--text-muted);
-      margin-top: 3px;
-    }
-    .status-msg {
-      font-size: 11px;
-      padding: 6px 8px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      display: none;
-    }
-    .status-msg.success {
-      display: block;
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-    .status-msg.error {
-      display: block;
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-    .settings-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: auto;
-    }
-    .btn-secondary {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border);
-      color: #cbd5e1;
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-primary {
-      flex: 1;
+    .checker-input:focus { border-color: #6366f1; }
+    .btn-scan-check {
       background: #4f46e5;
-      border: 1px solid #6366f1;
       color: #ffffff;
-      padding: 8px;
+      border: 1px solid #6366f1;
+      padding: 6px 10px;
       border-radius: 6px;
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
     }
-    .btn-primary:hover { background: #4338ca; }
+    .checker-chips { display: flex; gap: 4px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+    .chip-label { font-size: 9.5px; color: var(--text-muted); font-weight: 600; }
+    .checker-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      font-size: 9.5px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .checker-chip.active { background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #34d399; font-weight: 700; }
 
-    /* ── Verdict Hero Card ── */
     .verdict-card {
       background: var(--card-bg);
       border-radius: 12px;
-      padding: 16px;
+      padding: 14px;
       text-align: center;
       border: 1px solid var(--border);
-      margin-bottom: 12px;
-      transition: border-color 0.2s ease, background 0.2s ease;
-    }
-    .verdict-card.state-safe {
-      border-color: rgba(16, 185, 129, 0.4);
-      background: linear-gradient(180deg, var(--card-bg) 0%, var(--safe-bg) 100%);
-    }
-    .verdict-card.state-suspicious {
-      border-color: rgba(245, 158, 11, 0.4);
-      background: linear-gradient(180deg, var(--card-bg) 0%, var(--warn-bg) 100%);
-    }
-    .verdict-card.state-dangerous {
-      border-color: rgba(239, 68, 68, 0.5);
-      background: linear-gradient(180deg, var(--card-bg) 0%, var(--danger-bg) 100%);
-    }
-
-    .target-domain {
-      font-size: 12px;
-      color: var(--text-muted);
-      word-break: break-all;
       margin-bottom: 10px;
-      font-weight: 600;
     }
+    .verdict-card.state-safe { border-color: rgba(16, 185, 129, 0.4); background: linear-gradient(180deg, var(--card-bg) 0%, var(--safe-bg) 100%); }
+    .verdict-card.state-suspicious { border-color: rgba(245, 158, 11, 0.4); background: linear-gradient(180deg, var(--card-bg) 0%, var(--warn-bg) 100%); }
+    .verdict-card.state-dangerous { border-color: rgba(239, 68, 68, 0.5); background: linear-gradient(180deg, var(--card-bg) 0%, var(--danger-bg) 100%); }
 
-    .verdict-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    .verdict-icon {
-      font-size: 26px;
-    }
-    .verdict-badge {
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
+    .target-domain { font-size: 11.5px; color: var(--text-muted); word-break: break-all; margin-bottom: 8px; font-weight: 600; }
+    .verdict-header { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; }
+    .verdict-icon { font-size: 22px; }
+    .verdict-badge { font-size: 16px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; }
     .state-safe .verdict-badge { color: var(--safe); }
     .state-suspicious .verdict-badge { color: var(--warn); }
     .state-dangerous .verdict-badge { color: var(--danger); }
 
     .score-row {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 4px;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 10px;
+      display: inline-flex; align-items: baseline; gap: 4px;
+      background: rgba(0, 0, 0, 0.3); padding: 3px 10px; border-radius: 20px; font-size: 11px; color: var(--text-muted); margin-bottom: 8px;
     }
-    .score-number {
-      font-size: 20px;
-      font-weight: 800;
-      color: #ffffff;
-    }
+    .score-number { font-size: 18px; font-weight: 800; color: #ffffff; }
 
     .explanation-box {
-      font-size: 12.5px;
-      color: #e5e7eb;
-      text-align: left;
-      line-height: 1.45;
-      background: rgba(0, 0, 0, 0.25);
-      padding: 10px 12px;
-      border-radius: 8px;
-      border-left: 3px solid #64748b;
+      font-size: 11.5px; color: #e5e7eb; text-align: left; line-height: 1.4;
+      background: rgba(0, 0, 0, 0.25); padding: 8px 10px; border-radius: 8px; border-left: 3px solid #64748b;
     }
     .state-safe .explanation-box { border-left-color: var(--safe); }
     .state-suspicious .explanation-box { border-left-color: var(--warn); }
     .state-dangerous .explanation-box { border-left-color: var(--danger); }
 
-    /* ── Sections ── */
+    .source-badge {
+      display: inline-block; font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-top: 6px;
+      background: rgba(255, 255, 255, 0.07); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .source-badge.source-gemini { background: rgba(139, 92, 246, 0.18); color: #c4b5fd; border-color: rgba(139, 92, 246, 0.4); }
+
     .section-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      margin: 12px 0 6px 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 10px 0 5px 0;
+      display: flex; justify-content: space-between;
     }
-
-    /* ── Evidence List ── */
-    .evidence-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-    .evidence-item {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 11.5px;
-      color: #e2e8f0;
-      line-height: 1.4;
-    }
-    .evidence-tag {
-      display: inline-block;
-      font-size: 10px;
-      font-weight: 700;
-      color: #fca5a5;
-      margin-bottom: 3px;
-    }
-
-    /* ── Actionable Advice ── */
-    .advice-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-    .advice-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      font-size: 12px;
-      color: #d1d5db;
-      background: rgba(255, 255, 255, 0.03);
-      padding: 8px 10px;
-      border-radius: 8px;
-      border-left: 2px solid var(--accent);
-    }
-    .advice-icon {
-      font-size: 13px;
-      line-height: 1.2;
-    }
-
-    /* ── Controls & Actions ── */
-    .btn-deep-check {
-      width: 100%;
-      background: #1e1b4b;
-      color: #c7d2fe;
-      border: 1px solid #4338ca;
-      padding: 9px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-      margin-bottom: 10px;
-    }
-    .btn-deep-check:hover:not(:disabled) {
-      background: #312e81;
-      color: #ffffff;
-      border-color: #6366f1;
-    }
-    .btn-deep-check:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    .evidence-list, .advice-list { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+    .evidence-item { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 6px 8px; font-size: 11px; color: #e2e8f0; }
+    .evidence-tag { font-size: 9.5px; font-weight: 700; color: #fca5a5; margin-bottom: 2px; }
+    .advice-item { display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: #d1d5db; background: rgba(255, 255, 255, 0.03); padding: 6px 8px; border-radius: 6px; border-left: 2px solid var(--accent); }
 
     .control-row {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
     }
-    .control-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: #ffffff;
-    }
-    .control-sub {
-      font-size: 10px;
-      color: var(--text-muted);
-      margin-top: 1px;
-    }
-
+    .control-label { font-size: 11.5px; font-weight: 600; color: #ffffff; }
+    .control-sub { font-size: 9.5px; color: var(--text-muted); }
     .toggle-btn {
-      background: #334155;
-      color: #cbd5e1;
-      border: none;
-      padding: 4px 14px;
-      border-radius: 14px;
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: 700;
-      transition: all 0.2s ease;
+      background: #334155; color: #cbd5e1; border: none; padding: 3px 10px; border-radius: 12px; cursor: pointer; font-size: 10.5px; font-weight: 700; transition: all 0.2s;
     }
-    .toggle-btn.active {
-      background: var(--safe);
-      color: #022c22;
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
-    }
+    .toggle-btn.active { background: var(--safe); color: #022c22; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
 
     .btn-nuke {
-      width: 100%;
-      background: linear-gradient(135deg, #b91c1c, #7f1d1d);
-      color: #ffffff;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      padding: 9px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 800;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      transition: all 0.2s ease;
-      margin-top: 4px;
+      width: 100%; background: linear-gradient(135deg, #b91c1c, #7f1d1d); color: #ffffff; border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 8px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;
     }
-    .btn-nuke:hover {
-      filter: brightness(1.15);
-      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+    .btn-nuke:hover { filter: brightness(1.15); }
+
+    /* ── Telemetry Grid Inside Popup ── */
+    .pop-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+    .pop-stat-card {
+      background: rgba(20, 22, 35, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 8px; text-align: center;
+    }
+    .pop-stat-val { font-size: 18px; font-weight: 900; color: #fff; }
+    .pop-stat-val.red { color: #ef4444; }
+    .pop-stat-val.orange { color: #f97316; }
+    .pop-stat-val.green { color: #10b981; }
+    .pop-stat-val.blue { color: #38bdf8; }
+    .pop-stat-lbl { font-size: 9.5px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-top: 2px; }
+
+    .pop-map-container {
+      width: 100%; height: 210px; background: #020612; border: 1px solid rgba(56,189,248,0.25); border-radius: 10px; overflow: hidden; position: relative; margin-bottom: 10px;
     }
 
-    /* ── Footer ── */
-    .footer-links {
+    /* ── Pro Systems View ── */
+    .pro-box { background: rgba(20, 22, 35, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+    .pro-box-title { font-size: 11px; font-weight: 800; color: #fbbf24; margin-bottom: 6px; }
+    .pro-input-row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .pro-input { flex: 1; background: rgba(0,0,0,0.45); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 11px; color: #fff; }
+    .pro-btn { background: #4f46e5; color: #fff; border: 1px solid #6366f1; border-radius: 6px; padding: 6px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .pro-btn.gold { background: linear-gradient(135deg, #d97706, #b45309); border-color: #f59e0b; }
+
+    /* ── Sim Benchmark Box ── */
+    .pop-sim-box {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+    .pop-sim-header {
       display: flex;
+      justify-content: space-between;
+      align-items: center;
       gap: 8px;
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
+      margin-bottom: 8px;
     }
-    .footer-btn {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      color: #d1d5db;
-      padding: 7px 10px;
-      border-radius: 8px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.2s ease;
-    }
-    .footer-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+    .pop-sim-title { font-size: 11.5px; font-weight: 800; color: #ffffff; }
+    .pop-sim-desc { font-size: 9.5px; color: #94a3b8; margin-top: 1px; }
+    .btn-sim-trigger {
+      background: linear-gradient(135deg, #d97706, #b45309);
       color: #ffffff;
+      border: 1px solid #f59e0b;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .btn-sim-trigger:hover { filter: brightness(1.15); box-shadow: 0 0 10px rgba(245,158,11,0.4); }
+    .sim-log {
+      background: #030712;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 150px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    .sim-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #cbd5e1;
+      line-height: 1.3;
+      flex-wrap: wrap;
+    }
+    .sim-badge {
+      background: rgba(239, 68, 68, 0.25);
+      color: #f87171;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 9px;
+      letter-spacing: 0.5px;
+    }
+    .sim-domain {
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .sim-meta {
+      color: #64748b;
+      font-size: 9.5px;
     }
   </style>
 </head>
@@ -502,113 +366,288 @@
       <div class="brand-title">Scam<span>Lens</span></div>
     </div>
     <div class="header-actions">
-      <div class="offline-tag" id="mode-tag">Offline First</div>
-      <button class="icon-btn" id="btn-settings" type="button" aria-label="Backend & AI Settings" title="Backend & AI Settings">⚙️</button>
+      <div class="source-badge" id="mode-tag" style="margin:0;">Active Shield</div>
+      <button class="icon-btn" id="btn-settings" type="button" title="Backend & AI Settings">⚙️</button>
     </div>
   </header>
 
-  <!-- Settings Drawer View -->
-  <div class="settings-drawer" id="settings-drawer" style="display: none;" role="dialog" aria-modal="true" aria-label="Settings">
+  <!-- Settings Drawer -->
+  <div class="settings-drawer" id="settings-drawer" style="display: none;">
     <div class="settings-header">
-      <div class="settings-title">⚙️ Backend & AI Explainer</div>
-      <button class="close-btn" id="btn-close-settings" type="button" aria-label="Close settings">✕</button>
+      <div style="font-size:13px; font-weight:800; color:#fff;">⚙️ Backend & AI Settings</div>
+      <button class="icon-btn" id="btn-close-settings" type="button">✕</button>
     </div>
-    <div class="settings-body">
-      <div class="form-group">
-        <label for="backend-url-input">Apps Script Web App or Server URL</label>
-        <input type="text" id="backend-url-input" class="input-field" placeholder="https://script.google.com/macros/s/.../exec">
-        <div class="field-hint">Defaults to local server or offline deterministic rules if empty.</div>
+    <div class="form-group">
+      <label for="backend-url-input">Apps Script / Backend URL</label>
+      <input type="text" id="backend-url-input" class="input-field" placeholder="http://localhost:3000/api/check">
+    </div>
+    <div class="form-group">
+      <label for="shared-token-input">Auth Token</label>
+      <input type="text" id="shared-token-input" class="input-field" placeholder="scamlens-demo-token">
+    </div>
+    <div class="form-group">
+      <label for="gemini-key-input">Optional Gemini API Key</label>
+      <input type="password" id="gemini-key-input" class="input-field" placeholder="AI Studio Free API Key">
+    </div>
+    <div id="backend-status-msg" style="display:none; font-size:10.5px; padding:6px; border-radius:6px; margin-bottom:8px;"></div>
+    <div class="settings-buttons">
+      <button type="button" id="btn-test-backend" class="btn-secondary">Test</button>
+      <button type="button" id="btn-save-settings" class="btn-primary">Save</button>
+    </div>
+  </div>
+
+  <!-- In-Popup Multi-Tab Suite Navigation -->
+  <nav class="feature-suite-nav" aria-label="Feature Tabs">
+    <button type="button" class="suite-tab active" id="tab-btn-scanner">
+      <span class="tab-icon">⚡</span>
+      <span class="tab-text">Scanner</span>
+    </button>
+    <button type="button" class="suite-tab" id="tab-btn-telemetry">
+      <span class="tab-icon">📊</span>
+      <span class="tab-text">Telemetry</span>
+    </button>
+    <button type="button" class="suite-tab highlight" id="tab-btn-pro">
+      <span class="tab-icon">⭐</span>
+      <span class="tab-text">Pro</span>
+    </button>
+    <button type="button" class="suite-tab" id="tab-btn-whatif">
+      <span class="tab-icon">🧪</span>
+      <span class="tab-text">What-If</span>
+    </button>
+    <button type="button" class="suite-tab" id="tab-btn-history">
+      <span class="tab-icon">📜</span>
+      <span class="tab-text">History</span>
+    </button>
+  </nav>
+
+  <!-- ════════════ 1. SCANNER VIEW (Default) ════════════ -->
+  <div class="view-panel active" id="view-scanner">
+    <!-- Manual URL Checker -->
+    <div class="url-checker-box">
+      <div class="checker-input-row">
+        <input type="text" id="checker-url-input" class="checker-input" placeholder="Paste link to scan (SMS, email, chat)...">
+        <button type="button" id="btn-scan-custom-url" class="btn-scan-check">Check</button>
       </div>
-      <div class="form-group">
-        <label for="shared-token-input">Backend Auth Token</label>
-        <input type="text" id="shared-token-input" class="input-field" placeholder="scamlens-demo-token">
-      </div>
-      <div class="form-group">
-        <label for="gemini-key-input">Optional Gemini API Key</label>
-        <input type="password" id="gemini-key-input" class="input-field" placeholder="AI Studio Free API Key">
-        <div class="field-hint">Rules decide score; Gemini only rewrites explanations.</div>
-      </div>
-      <div id="backend-status-msg" class="status-msg"></div>
-      <div class="settings-buttons">
-        <button type="button" id="btn-test-backend" class="btn-secondary">Test Connection</button>
-        <button type="button" id="btn-save-settings" class="btn-primary">Save Settings</button>
+      <div class="checker-chips">
+        <span class="chip-label">Quick:</span>
+        <button type="button" class="checker-chip" data-url="http://login.micros0ft-verify.com">MS Spoof</button>
+        <button type="button" class="checker-chip" data-url="http://paypal-security-alert.xyz/signin">PayPal Phish</button>
+        <button type="button" class="checker-chip" data-url="https://google.com">Google Safe</button>
+        <button type="button" class="checker-chip active" id="chip-active-tab">📍 Active Tab</button>
       </div>
     </div>
-  </div>
 
-  <!-- Verdict Hero Region (Screen Reader Accessible) -->
-  <section class="verdict-card state-safe" id="verdict-card" role="region" aria-live="polite" aria-label="Site Security Verdict">
-    <div class="target-domain" id="target-domain">Analyzing current tab...</div>
-    
-    <div class="verdict-header">
-      <span class="verdict-icon" id="verdict-icon" aria-hidden="true">🛡️</span>
-      <span class="verdict-badge" id="verdict-text">SAFE</span>
+    <!-- Verdict Card -->
+    <section class="verdict-card state-safe" id="verdict-card">
+      <div class="target-domain" id="target-domain">Analyzing active tab...</div>
+      
+      <div class="verdict-header">
+        <span class="verdict-icon" id="verdict-icon">🛡️</span>
+        <span class="verdict-badge" id="verdict-text">SAFE</span>
+      </div>
+
+      <div class="score-row">
+        <span>Threat Score:</span>
+        <span class="score-number" id="threat-score">0</span>
+        <span>/ 100</span>
+      </div>
+
+      <div class="explanation-box" id="explanation-text">
+        Evaluating destination safety & active page targets...
+      </div>
+
+      <div class="source-badge" id="source-badge">🛡️ Deterministic Rules</div>
+    </section>
+
+    <!-- Detection Evidence -->
+    <div class="section-title">
+      <span>Detection Evidence</span>
+      <span id="evidence-count">0 signals</span>
+    </div>
+    <ul class="evidence-list" id="evidence-list">
+      <li class="evidence-item" id="evidence-empty">No suspicious or deceptive indicators detected.</li>
+    </ul>
+
+    <!-- Actionable Advice -->
+    <div class="section-title">
+      <span>Recommended Action</span>
+    </div>
+    <ul class="advice-list" id="advice-list"></ul>
+
+    <!-- Deep Check Action -->
+    <button class="btn-scan-check" id="btn-deep-check" style="width:100%; margin-bottom:8px; padding:7px;">
+      🔍 Deep Infrastructure Check (DNS & RDAP)
+    </button>
+
+    <!-- Deep Check Details -->
+    <div id="deep-check-panel" style="display:none; background:rgba(30,27,75,0.45); border:1px solid rgba(99,102,241,0.3); border-radius:8px; padding:8px; margin-bottom:8px; font-size:11px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:4px;">
+        <div>DNS: <b id="deep-dns-status" style="color:#34d399;">NOERROR</b></div>
+        <div>IP: <b id="deep-ip-val">—</b></div>
+        <div>MX Mail: <b id="deep-mx-val">—</b></div>
+        <div>Domain Age: <b id="deep-age-val">—</b></div>
+      </div>
+      <div id="deep-ai-summary" style="color:#c7d2fe; font-size:10.5px;"></div>
     </div>
 
-    <div class="score-row">
-      <span>Threat Score:</span>
-      <span class="score-number" id="threat-score">0</span>
-      <span>/ 100</span>
+    <!-- Controls -->
+    <div class="control-row">
+      <div>
+        <div class="control-label">Tracker Shield</div>
+        <div class="control-sub">Blocks 50 known tracker networks</div>
+      </div>
+      <button class="toggle-btn" id="shield-toggle">OFF</button>
     </div>
 
-    <div class="explanation-box" id="explanation-text">
-      Scanning link destination and in-page form targets...
+    <div class="control-row">
+      <div>
+        <div class="control-label">Allow On This Site</div>
+        <div class="control-sub">Bypass blocking for active domain</div>
+      </div>
+      <button class="toggle-btn" id="whitelist-toggle">OFF</button>
     </div>
 
-    <div class="source-badge" id="source-badge">🛡️ Deterministic Rules</div>
-  </section>
-
-  <!-- Evidence Section -->
-  <div class="section-title">
-    <span>Detection Evidence</span>
-    <span id="evidence-count">0 signals</span>
+    <button class="btn-nuke" id="btn-nuke">
+      ☢️ Clean Cookies & Storage
+    </button>
   </div>
-  <ul class="evidence-list" id="evidence-list">
-    <li class="evidence-item" id="evidence-empty">No suspicious or malicious indicators triggered.</li>
-  </ul>
 
-  <!-- Actionable Advice Section -->
-  <div class="section-title">
-    <span>Recommended Action</span>
-  </div>
-  <ul class="advice-list" id="advice-list">
-    <!-- Populated safely via textContent -->
-  </ul>
-
-  <!-- Deep Check Action -->
-  <button class="btn-deep-check" id="btn-deep-check" type="button">
-    <span aria-hidden="true">🔍</span>
-    <span id="deep-check-label">Deep Check (DNS & RDAP)</span>
-  </button>
-
-  <!-- Safety Shield Control -->
-  <div class="control-row">
-    <div>
-      <div class="control-label">Tracker Shield</div>
-      <div class="control-sub">Blocks 50 known tracker networks</div>
+  <!-- ════════════ 2. TELEMETRY VIEW ════════════ -->
+  <div class="view-panel" id="view-telemetry">
+    <div class="panel-view-header">
+      <div class="panel-view-title">📊 Live Telemetry & Protection</div>
+      <a href="dashboard.html" class="btn-open-tab" id="link-full-dashboard">↗ Full Dashboard</a>
     </div>
-    <button class="toggle-btn" id="shield-toggle" type="button" aria-pressed="false">OFF</button>
-  </div>
 
-  <!-- Whitelist Control -->
-  <div class="control-row">
-    <div>
-      <div class="control-label">Allow On This Site</div>
-      <div class="control-sub">Bypass tracker blocking for this domain</div>
+    <div class="pop-stats-grid">
+      <div class="pop-stat-card">
+        <div class="pop-stat-val red" id="pop-stat-blocked">37</div>
+        <div class="pop-stat-lbl">Threats Neutralized</div>
+      </div>
+      <div class="pop-stat-card">
+        <div class="pop-stat-val orange" id="pop-stat-data">1011 KB</div>
+        <div class="pop-stat-lbl">Bandwidth Saved</div>
+      </div>
+      <div class="pop-stat-card">
+        <div class="pop-stat-val green" id="pop-stat-sites">6</div>
+        <div class="pop-stat-lbl">Websites Tracked</div>
+      </div>
+      <div class="pop-stat-card">
+        <div class="pop-stat-val blue" id="pop-stat-value">$5.30</div>
+        <div class="pop-stat-lbl">Market Value Saved</div>
+      </div>
     </div>
-    <button class="toggle-btn" id="whitelist-toggle" type="button" aria-pressed="false">OFF</button>
+
+    <div class="section-title">
+      <span>Global Threat Vectors Monitored</span>
+    </div>
+    <div class="pop-map-container" id="pop-map-box">
+      <!-- In-Popup Threat Map Canvas -->
+    </div>
+
+    <!-- Live Tracker Interceptor Benchmark in Extension -->
+    <div class="pop-sim-box">
+      <div class="pop-sim-header">
+        <div>
+          <div class="pop-sim-title">Live Tracker Interceptor Benchmark</div>
+          <div class="pop-sim-desc">Simulate real third-party ad networks attempting to load scripts:</div>
+        </div>
+        <button type="button" id="btn-pop-sim-tracker" class="btn-sim-trigger">
+          Run Interceptor 📡
+        </button>
+      </div>
+      <div id="pop-tracker-sim-log" class="sim-log">
+        <div style="color:#64748b; font-style:italic;">Click "Run Interceptor" to benchmark DNR domain filtering...</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span>Recently Secured Sites</span>
+    </div>
+    <div id="pop-protected-sites" style="display:flex; flex-direction:column; gap:4px;"></div>
   </div>
 
-  <!-- Privacy Nuke -->
-  <button class="btn-nuke" id="btn-nuke" type="button">
-    ☢️ Clean Cookies & Storage
-  </button>
+  <!-- ════════════ 3. PRO VIEW ════════════ -->
+  <div class="view-panel" id="view-pro">
+    <div class="panel-view-header">
+      <div class="panel-view-title">⭐ Pro Cyber Systems</div>
+      <a href="pro.html" class="btn-open-tab" id="link-full-pro">↗ Full Pro Suite</a>
+    </div>
 
-  <!-- Footer Navigation -->
-  <footer class="footer-links">
-    <button class="footer-btn" id="btn-dashboard" type="button">📊 Dashboard</button>
-    <button class="footer-btn" id="btn-report" type="button">📄 Full Report</button>
-  </footer>
+    <!-- HIBP Breach Checker -->
+    <div class="pro-box">
+      <div class="pro-box-title">🔐 HaveIBeenPwned Breach Scanner</div>
+      <div style="font-size:10.5px; color:#94a3b8; margin-bottom:6px;">Zero-knowledge k-anonymity SHA-1 lookup</div>
+      <div class="pro-input-row">
+        <input type="email" id="pop-breach-email" class="pro-input" placeholder="Enter email to check leaks...">
+        <button type="button" id="pop-btn-breach" class="pro-btn">Scan</button>
+      </div>
+      <div id="pop-breach-res" style="display:none; font-size:11px; padding:6px; border-radius:6px;"></div>
+    </div>
+
+    <!-- Email Alias Generator -->
+    <div class="pro-box">
+      <div class="pro-box-title">🎭 Ghost Email Alias Generator</div>
+      <div style="font-size:10.5px; color:#94a3b8; margin-bottom:6px;">Create throwaway forwarding masks</div>
+      <div class="pro-input-row">
+        <input type="text" id="pop-alias-val" class="pro-input" readonly value="ghost.shield.8492@scamlens.io">
+        <button type="button" id="pop-btn-gen-alias" class="pro-btn gold">Generate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ 4. WHAT-IF VIEW ════════════ -->
+  <div class="view-panel" id="view-whatif">
+    <div class="panel-view-header">
+      <div class="panel-view-title">🧪 What-If Privacy Sandbox</div>
+      <a href="whatif.html" class="btn-open-tab" id="link-full-whatif">↗ Full Sandbox</a>
+    </div>
+
+    <div class="pro-box">
+      <div style="font-size:11px; color:#cbd5e1; margin-bottom:8px;">Adjust simulated tracker exposure:</div>
+      
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:10.5px; color:#94a3b8;">
+          <span>Ad Network Trackers</span>
+          <span id="val-ads" style="color:#ef4444; font-weight:700;">8</span>
+        </div>
+        <input type="range" id="range-ads" min="0" max="25" value="8" style="width:100%; accent-color:#ef4444;">
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:10.5px; color:#94a3b8;">
+          <span>Social Pixels</span>
+          <span id="val-social" style="color:#f97316; font-weight:700;">4</span>
+        </div>
+        <input type="range" id="range-social" min="0" max="15" value="4" style="width:100%; accent-color:#f97316;">
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:10.5px; color:#94a3b8;">
+          <span>Fingerprinting Scripts</span>
+          <span id="val-fp" style="color:#f59e0b; font-weight:700;">2</span>
+        </div>
+        <input type="range" id="range-fp" min="0" max="10" value="2" style="width:100%; accent-color:#f59e0b;">
+      </div>
+
+      <div style="background:rgba(0,0,0,0.4); padding:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+        <span style="font-size:11px; font-weight:700; color:#fff;">Calculated Exposure:</span>
+        <span id="pop-whatif-score" style="font-size:14px; font-weight:900; color:#ef4444;">68% HIGH RISK</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ 5. HISTORY VIEW ════════════ -->
+  <div class="view-panel" id="view-history">
+    <div class="panel-view-header">
+      <div class="panel-view-title">📜 Security Incident Timeline</div>
+      <a href="history.html" class="btn-open-tab" id="link-full-history">↗ Full Timeline</a>
+    </div>
+
+    <div class="pop-activity-list" id="pop-history-list">
+      <!-- Activity items -->
+    </div>
+  </div>
 
   <script src="popup.js"></script>
 </body>

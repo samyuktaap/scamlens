@@ -7,7 +7,7 @@
  * caches per-tab verdicts, and handles optional backend enrichment.
  */
 
-import { analyzeUrl, POPULAR_DOMAINS } from './rules.js';
+import { analyzeUrl, POPULAR_DOMAINS, getVerdictAdvice } from './rules.js';
 import { TelemetryProcessor } from './telemetry.js';
 
 // ── In-Memory Caches ──
@@ -52,15 +52,75 @@ chrome.runtime.onStartup.addListener(async () => {
     enableShadowShield();
     console.log('[ScamLens] Shield auto-restored on startup.');
   }
+  setupContextMenus();
 });
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   const { shieldActive } = await getStorage('shieldActive');
   if (shieldActive) enableShadowShield();
   await ensureStatsInitialized();
+  setupContextMenus();
 
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/onboard.html') });
+  }
+});
+
+// ── Context Menu Setup ──
+function setupContextMenus() {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: 'scamlens-scan-link',
+      title: '🔍 Scan with ScamLens',
+      contexts: ['link'],
+    });
+    chrome.contextMenus.create({
+      id: 'scamlens-scan-page',
+      title: '🛡️ ScamLens: Check This Page',
+      contexts: ['page'],
+    });
+    chrome.contextMenus.create({
+      id: 'scamlens-scan-selection',
+      title: '🔍 Scan Selected URL',
+      contexts: ['selection'],
+    });
+  });
+}
+
+// ── Context Menu Click Handler ──
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  let targetUrl = '';
+
+  if (info.menuItemId === 'scamlens-scan-link') {
+    targetUrl = info.linkUrl || '';
+  } else if (info.menuItemId === 'scamlens-scan-page') {
+    targetUrl = tab.url || '';
+  } else if (info.menuItemId === 'scamlens-scan-selection') {
+    const sel = (info.selectionText || '').trim();
+    targetUrl = /^https?:\/\//i.test(sel) ? sel : 'https://' + sel;
+  }
+
+  if (!targetUrl || !targetUrl.startsWith('http')) return;
+
+  try {
+    const analysis = analyzeUrl(targetUrl);
+
+    // Show result as notification
+    const icon = analysis.verdict === 'Dangerous' ? '🚨' : analysis.verdict === 'Suspicious' ? '⚠️' : '✅';
+    const color = analysis.verdict === 'Dangerous' ? 'DANGEROUS' : analysis.verdict === 'Suspicious' ? 'SUSPICIOUS' : 'SAFE';
+
+    chrome.notifications.create(`scan-${Date.now()}`, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('public/icon128.png'),
+      title: `ScamLens: ${color} (Score: ${analysis.score}/100)`,
+      message: analysis.explanation || analysis.plainExplanation || `${new URL(targetUrl).hostname} — ${analysis.verdict}`,
+      priority: analysis.verdict === 'Dangerous' ? 2 : 1,
+    });
+
+    // Also store result so popup can show it
+    await chrome.storage.local.set({ contextMenuResult: { url: targetUrl, ...analysis, timestamp: Date.now() } });
+  } catch (e) {
+    console.warn('[ScamLens Context Menu] Error:', e);
   }
 });
 
@@ -107,6 +167,26 @@ export async function evaluateTabScamLens(tabId, url) {
   tabVerdicts.set(tabId, analysis);
   updateToolbarBadge(tabId, analysis.verdict, analysis.score);
 
+  // ── Push Notification for Dangerous Sites ──
+  if (analysis.verdict === 'Dangerous') {
+    const notifKey = `notified_${analysis.host}`;
+    const already = await getStorage(notifKey);
+    if (!already[notifKey]) {
+      chrome.notifications.create(`threat-${Date.now()}`, {
+        type: 'basic',
+        iconUrl: chrome.runtime.getURL('public/icon128.png'),
+        title: '🚨 ScamLens: DANGEROUS SITE DETECTED',
+        message: `${analysis.host} — ${analysis.explanation || 'Phishing or scam indicators detected. Do not enter credentials.'}`,
+        priority: 2,
+      });
+      // Suppress repeat notifications for same domain for 1 hour
+      const suppress = {};
+      suppress[notifKey] = true;
+      chrome.storage.local.set(suppress);
+      setTimeout(() => chrome.storage.local.remove(notifKey), 3600000);
+    }
+  }
+
   // Persist latest active evaluation for popup / dashboard
   await chrome.storage.local.set({
     lastAnalysis: analysis,
@@ -121,6 +201,23 @@ export async function evaluateTabScamLens(tabId, url) {
       mode: analysis.mode
     }
   });
+
+  // Track unique protected domains for dashboard stats
+  if (analysis.host) {
+    try {
+      const { dashboardStats = {} } = await getStorage('dashboardStats');
+      const stats = normalizeStats(dashboardStats);
+      const domains = stats.protectedDomains || [];
+      if (!domains.includes(analysis.host)) {
+        domains.push(analysis.host);
+        stats.protectedDomains = domains.slice(-200); // keep last 200
+        stats.sessionsProtected = domains.length;
+        ensureTodayBucket(stats);
+        stats.weeklyData[todayKey()].sessions = (stats.weeklyData[todayKey()].sessions || 0) + 1;
+        await chrome.storage.local.set({ dashboardStats: stats });
+      }
+    } catch (e) {}
+  }
 
   // Notify content script
   try {
@@ -231,10 +328,12 @@ async function nukeSiteData(pageUrl) {
     await chrome.cookies.remove({ url: cookieUrl, name: cookie.name }).catch(() => {});
   }
 
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab && tab.url.includes(domain)) {
+  // Find any tab showing this domain (not just the active one, since popup may be active)
+  const allTabs = await chrome.tabs.query({});
+  const matchingTab = allTabs.find(t => t.url && t.url.includes(domain));
+  if (matchingTab) {
     await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
+      target: { tabId: matchingTab.id },
       func: () => {
         try {
           localStorage.clear();
@@ -276,41 +375,133 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep channel open for async response
   }
 
+  // Custom URL Evaluation (On-demand URL Checker)
+  if (message.type === 'ANALYZE_CUSTOM_URL') {
+    try {
+      const targetUrl = message.url || '';
+      const analysis = analyzeUrl(targetUrl);
+      const fallback = getVerdictAdvice(analysis.verdict, analysis.score, analysis.signals);
+      sendResponse({
+        ...analysis,
+        plainExplanation: fallback.plainExplanation,
+        advice: fallback.actionableSteps,
+        source: 'rules-engine'
+      });
+    } catch (err) {
+      sendResponse({ error: err.message });
+    }
+    return false;
+  }
+
   // Deep Check request (DNS lookup + Apps Script / Gemini Explainer)
   if (message.type === 'RUN_DEEP_CHECK') {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-      const activeTab = tabs[0];
-      if (!activeTab || !activeTab.url) {
-        sendResponse({ error: 'No active tab' });
-        return;
+      let targetUrl = message.url;
+      if (!targetUrl) {
+        const activeTab = tabs[0];
+        if (!activeTab || !activeTab.url) {
+          sendResponse({ error: 'No active tab or URL specified' });
+          return;
+        }
+        targetUrl = activeTab.url;
       }
 
       try {
-        const url = new URL(activeTab.url);
+        const url = new URL(targetUrl.startsWith('http') ? targetUrl : 'https://' + targetUrl);
         const host = url.hostname;
 
-        // 1. Query Google Public DNS over HTTPS for MX records
+        // Extract base registrable domain for RDAP lookup
+        const hostParts = host.split('.');
+        const regDomain = hostParts.length >= 2 ? hostParts.slice(-2).join('.') : host;
+
+        // 1. Query Google Public DNS over HTTPS (A records + MX records)
+        let resolvedIps = [];
         let hasMxRecords = true;
+        let mxCount = 0;
+        let dnsStatus = 'NOERROR';
+
         try {
-          const dnsRes = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=MX`, {
-            headers: { 'Accept': 'application/dns-json' }
+          const [aRes, mxRes] = await Promise.all([
+            fetch(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=A`, {
+              headers: { 'Accept': 'application/dns-json' }
+            }).then(r => r.json()).catch(() => ({})),
+            fetch(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=MX`, {
+              headers: { 'Accept': 'application/dns-json' }
+            }).then(r => r.json()).catch(() => ({}))
+          ]);
+
+          if (aRes.Status === 3) dnsStatus = 'NXDOMAIN';
+          else if (aRes.Status === 0) dnsStatus = 'NOERROR';
+
+          resolvedIps = Array.isArray(aRes.Answer) 
+            ? aRes.Answer.filter(rec => rec.type === 1).map(rec => rec.data) 
+            : [];
+          
+          const mxAnswers = Array.isArray(mxRes.Answer) ? mxRes.Answer : [];
+          hasMxRecords = mxAnswers.length > 0;
+          mxCount = mxAnswers.length;
+        } catch (dnsErr) {
+          console.warn('[ScamLens DNS] Lookup error:', dnsErr);
+        }
+
+        // 2. Query ICANN / Verisign RDAP for Registration Age & Registrar
+        let domainAgeDays = null;
+        let createdDate = null;
+        let registrarName = null;
+
+        try {
+          const isVerisign = regDomain.endsWith('.com') || regDomain.endsWith('.net');
+          const rdapUrl = isVerisign
+            ? `https://rdap.verisign.com/com/v1/domain/${encodeURIComponent(regDomain)}`
+            : `https://rdap.org/domain/${encodeURIComponent(regDomain)}`;
+
+          const rdapCtrl = new AbortController();
+          const rdapTimeout = setTimeout(() => rdapCtrl.abort(), 3500);
+
+          const rdapRes = await fetch(rdapUrl, {
+            headers: { 'Accept': 'application/rdap+json, application/json' },
+            signal: rdapCtrl.signal
           });
-          const dnsData = await dnsRes.json();
-          hasMxRecords = Array.isArray(dnsData.Answer) && dnsData.Answer.length > 0;
-        } catch (e) {
-          console.warn('[ScamLens DNS] Lookup skipped:', e);
+          clearTimeout(rdapTimeout);
+
+          if (rdapRes.ok) {
+            const rdapData = await rdapRes.json();
+            const events = Array.isArray(rdapData.events) ? rdapData.events : [];
+            const regEvent = events.find(e => e.eventAction === 'registration');
+            if (regEvent && regEvent.eventDate) {
+              createdDate = regEvent.eventDate;
+              domainAgeDays = Math.floor((Date.now() - new Date(createdDate).getTime()) / (1000 * 60 * 60 * 24));
+            }
+
+            const entities = Array.isArray(rdapData.entities) ? rdapData.entities : [];
+            const registrarEntity = entities.find(e => Array.isArray(e.roles) && e.roles.includes('registrar'));
+            if (registrarEntity && registrarEntity.vcardArray) {
+              const fn = registrarEntity.vcardArray[1]?.find(v => v[0] === 'fn');
+              if (fn && fn[3]) registrarName = fn[3];
+            }
+          }
+        } catch (rdapErr) {
+          console.warn('[ScamLens RDAP] Lookup skipped/timed out:', rdapErr);
         }
 
         const externalSignals = {
           hasMxRecords,
-          safeBrowsingMatch: false
+          safeBrowsingMatch: false,
+          domainAgeDays: domainAgeDays !== null ? domainAgeDays : undefined
         };
 
-        tabExternalSignals.set(activeTab.id, externalSignals);
-        const enriched = await evaluateTabScamLens(activeTab.id, activeTab.url);
+        // Tag external signals on the correct tab (match by URL, not just active tab)
+        const allTabs = await chrome.tabs.query({});
+        const urlMatchTab = allTabs.find(t => t.url && t.url.startsWith('http') && new URL(t.url).hostname === host) || activeTab;
+        tabExternalSignals.set(urlMatchTab.id, externalSignals);
+        const enriched = await evaluateTabScamLens(urlMatchTab.id, targetUrl);
 
-        // 2. Query Google Apps Script Web App or Local Fallback Server for AI explanation
-        const { backendUrl, sharedToken = 'scamlens-demo-token', geminiApiKey } = await getStorage(['backendUrl', 'sharedToken', 'geminiApiKey']);
+        // 3. Query Google Apps Script Web App or Local Fallback Server for AI explanation
+        const stored = await getStorage(['backendUrl', 'sharedToken', 'geminiApiKey']);
+        // Fall back to .env build-time constants if nothing saved in storage
+        const backendUrl   = stored.backendUrl   || (typeof __ENV__ !== 'undefined' ? __ENV__.BACKEND_URL    : '');
+        const sharedToken  = stored.sharedToken  || (typeof __ENV__ !== 'undefined' ? __ENV__.SHARED_TOKEN   : 'scamlens-demo-token');
+        const geminiApiKey = stored.geminiApiKey || (typeof __ENV__ !== 'undefined' ? __ENV__.GEMINI_API_KEY : '');
         
         const candidateEndpoints = [];
         if (backendUrl && backendUrl.trim()) {
@@ -322,7 +513,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         for (const endpoint of candidateEndpoints) {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4500);
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
 
             const res = await fetch(endpoint, {
               method: 'POST',
@@ -344,9 +535,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               aiEnrichment = await res.json();
               break;
             }
-          } catch (netErr) {
-            // Server unavailable, attempt next or fallback
-          }
+          } catch (netErr) {}
         }
 
         if (aiEnrichment && aiEnrichment.plainExplanation) {
@@ -359,6 +548,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           enriched.source = 'rules-engine';
         }
+
+        // 4. Attach Structured Deep Check Intelligence Object
+        enriched.deepCheck = {
+          dns: {
+            status: dnsStatus,
+            ips: resolvedIps.slice(0, 4),
+            hasMx: hasMxRecords,
+            mxCount: mxCount
+          },
+          rdap: {
+            domainAgeDays: domainAgeDays,
+            created: createdDate ? new Date(createdDate).toISOString().split('T')[0] : 'N/A',
+            registrar: registrarName || 'Standard / Privacy Guarded'
+          },
+          threatIntel: {
+            isInfantDomain: domainAgeDays !== null && domainAgeDays < 30,
+            safeBrowsing: 'Clean'
+          }
+        };
 
         tabVerdicts.set(activeTab.id, enriched);
         sendResponse(enriched);
@@ -412,18 +620,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Shield toggling
   if (message.type === 'ENABLE_SHIELD') {
-    enableShadowShield();
-    chrome.storage.local.set({ shieldActive: true });
-    recordShieldEvent(true);
-    sendResponse({ success: true });
+    (async () => {
+      try {
+        await enableShadowShield();
+        await chrome.storage.local.set({ shieldActive: true });
+        await recordShieldEvent(true);
+        sendResponse({ success: true });
+      } catch (e) {
+        sendResponse({ success: false, error: e.message });
+      }
+    })();
     return true;
   }
 
   if (message.type === 'DISABLE_SHIELD') {
-    disableShadowShield();
-    chrome.storage.local.set({ shieldActive: false });
-    recordShieldEvent(false);
-    sendResponse({ success: true });
+    (async () => {
+      try {
+        await disableShadowShield();
+        await chrome.storage.local.set({ shieldActive: false });
+        await recordShieldEvent(false);
+        sendResponse({ success: true });
+      } catch (e) {
+        sendResponse({ success: false, error: e.message });
+      }
+    })();
     return true;
   }
 

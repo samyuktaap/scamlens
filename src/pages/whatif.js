@@ -97,10 +97,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  const scannerNav = document.getElementById('nav-scanner');
   const dashNav = document.getElementById('nav-dashboard');
   const proNav = document.getElementById('nav-pro');
   const reportNav = document.getElementById('nav-report');
   const historyNav = document.getElementById('nav-history');
+  if (scannerNav) scannerNav.onclick = (e) => { e.preventDefault(); navigateTo('popup'); };
   if (dashNav) dashNav.onclick = (e) => { e.preventDefault(); navigateTo('dashboard'); };
   if (proNav) proNav.onclick = (e) => { e.preventDefault(); navigateTo('pro'); };
   if (reportNav) reportNav.onclick = (e) => { e.preventDefault(); navigateTo('report'); };

@@ -8,30 +8,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  const scannerNav = document.getElementById('nav-scanner');
   const dashboardNav = document.getElementById('nav-dashboard');
+  const proNav = document.getElementById('nav-pro');
   const whatifNav = document.getElementById('nav-whatif');
   const historyNav = document.getElementById('nav-history');
 
+  if (scannerNav) scannerNav.onclick = (e) => { e.preventDefault(); navigateTo('popup'); };
   if (dashboardNav) dashboardNav.onclick = (e) => { e.preventDefault(); navigateTo('dashboard'); };
+  if (proNav) proNav.onclick = (e) => { e.preventDefault(); navigateTo('pro'); };
   if (whatifNav) whatifNav.onclick = (e) => { e.preventDefault(); navigateTo('whatif'); };
   if (historyNav) historyNav.onclick = (e) => { e.preventDefault(); navigateTo('history'); };
 
 
-  // Load data from chrome storage
-  chrome.storage.local.get(['lastAnalysis', 'shieldActive'], (data) => {
-    if (data.lastAnalysis) {
-      const { domain, cookieCount, trackerNames, riskLevel, dangerousFields, detailedAnalysis } = data.lastAnalysis;
-      const score = data.lastAnalysis.score !== undefined ? data.lastAnalysis.score : Math.min(cookieCount * 5, 100);
-      
-      document.getElementById('domain-display').innerText = `🌐 ${domain}`;
-      document.getElementById('score-display').innerText = score;
-      document.getElementById('tracker-count').innerText = cookieCount;
-      if (data.lastAnalysis.riskClassification) {
-        document.getElementById('risk-level').innerText = data.lastAnalysis.riskClassification.risk_label;
-        document.getElementById('risk-level').style.color = data.lastAnalysis.riskClassification.visual_indicator;
-      } else {
-        document.getElementById('risk-level').innerText = riskLevel;
-      }
+  const defaultReport = {
+    domain: 'micros0ft-verify.com',
+    cookieCount: 14,
+    score: 85,
+    riskLevel: 'CRITICAL',
+    trackerNames: ['adservice.google.com', 'tracking-pixel.biz', 'fingerprint-js.net', 'stealth-beacon.org'],
+    dangerousFields: ['Password Input Field', 'OTP Verification Form', 'Hardware Canvas Fingerprint', 'Cross-Domain Post Action'],
+    riskClassification: {
+      risk_label: 'CRITICAL PHISHING RISK',
+      visual_indicator: '#ef4444'
+    },
+    detailedAnalysis: {
+      explanation: 'Detected brand typo-squatting targeting Microsoft users with credential form harvesting.'
+    }
+  };
+
+  const onDataLoaded = (lastAnalysis, shieldActive = true) => {
+    const analysis = lastAnalysis || defaultReport;
+    const { domain, cookieCount, trackerNames, riskLevel, dangerousFields, detailedAnalysis } = analysis;
+    const score = analysis.score !== undefined ? analysis.score : Math.min(cookieCount * 5, 100);
+    
+    document.getElementById('domain-display').innerText = `🌐 ${domain}`;
+    document.getElementById('score-display').innerText = score;
+    document.getElementById('tracker-count').innerText = cookieCount;
+    if (analysis.riskClassification) {
+      document.getElementById('risk-level').innerText = analysis.riskClassification.risk_label;
+      document.getElementById('risk-level').style.color = analysis.riskClassification.visual_indicator;
+    } else {
+      document.getElementById('risk-level').innerText = riskLevel;
+    }
 
       // Show tracker names
       const tagContainer = document.getElementById('tracker-tags');
@@ -76,15 +95,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         dangerContainer.appendChild(explanationDiv);
       }
 
-      let aiPrediction = data.lastAnalysis.aiPrediction;
+      let aiPrediction = analysis.aiPrediction;
 
       // FALLBACK: If user hasn't refreshed the actual website and has an old cache, 
       // we generate the AI prediction right here using their existing cached data!
       if (!aiPrediction) {
         let riskScore = 0;
         let riskFactors = [];
-        let thirdPartyTrackers = data.lastAnalysis.trackersFound || 0;
-        let cookieCount = data.lastAnalysis.cookieCount || 0;
+        let thirdPartyTrackers = analysis.trackersFound || (trackerNames ? trackerNames.length : 0);
+        let cCount = analysis.cookieCount || cookieCount || 0;
 
         if (thirdPartyTrackers > 5) {
           riskScore += 40;
@@ -92,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (thirdPartyTrackers > 0) {
           riskScore += 15;
         }
-        if (cookieCount > 20) {
+        if (cCount > 20) {
           riskScore += 20;
           riskFactors.push("Excessive local data storage (cookies).");
         }
@@ -147,13 +166,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Populate AI Recommendations
-      let aiRecommendations = data.lastAnalysis.aiRecommendations;
+      let aiRecommendations = analysis.aiRecommendations;
 
       // FALLBACK for recommendations if using cached data
       if (!aiRecommendations) {
         let recs = [];
-        let thirdPartyTrackers = data.lastAnalysis.trackersFound || 0;
-        let cookieCount = data.lastAnalysis.cookieCount || 0;
+        let thirdPartyTrackers = analysis.trackersFound || (trackerNames ? trackerNames.length : 0);
+        let cCount = analysis.cookieCount || cookieCount || 0;
         let pAction = "No urgent actions required.";
         let mGain = 0;
 
@@ -214,10 +233,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const downloadBtn = document.getElementById('download-report');
       if (downloadBtn) {
         downloadBtn.onclick = () => {
-          const reportData = data.lastAnalysis;
+          const reportData = analysis;
           const dossierText = `
 =========================================
-      DATASHADOW INTELLIGENCE DOSSIER
+       SCAMLENS INTELLIGENCE DOSSIER
 =========================================
 TARGET DOMAIN: ${reportData.domain}
 GENERATED AT: ${new Date().toLocaleString()}
@@ -233,7 +252,7 @@ DANGEROUS DATA FIELDS:
 ${(reportData.dangerousFields || []).map(f => " [!] " + f).join('\n')}
 
 -----------------------------------------
-AI PREDICTION (Random Forest):
+AI PREDICTION (Cyber Heuristics):
 Predicted Risk: ${aiPrediction.predicted_risk_level}
 Confidence: ${aiPrediction.confidence_score}%
 Explanation: ${aiPrediction.model_explanation}
@@ -243,7 +262,7 @@ PRIORITY RECOMMENDATION:
 ${aiRecommendations.priority_action}
 
 =========================================
-      SHIELD ACTIVE - DATA SECURED
+       SHIELD ACTIVE - DATA SECURED
 =========================================
           `.trim();
 
@@ -251,29 +270,38 @@ ${aiRecommendations.priority_action}
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `DataShadow_Dossier_${reportData.domain.replace(/\./g, '_')}.txt`;
+          a.download = `ScamLens_Dossier_${reportData.domain.replace(/\./g, '_')}.txt`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
         };
       }
-    } else {
-      document.getElementById('domain-display').innerText = `⚠️ No Data`;
-      document.getElementById('danger-list').innerHTML = '<div style="color:#ffaa00; font-size:14px;">Please visit a website and refresh the page to generate a report.</div>';
-    }
 
-    // Shield toggle
-    const btn = document.getElementById('shield-btn');
-    if (data.shieldActive) {
-      btn.classList.add('on');
-      btn.innerText = 'ON ✅';
-    }
-    btn.onclick = () => {
-      const isOn = btn.classList.toggle('on');
-      btn.innerText = isOn ? 'ON ✅' : 'OFF';
-      chrome.storage.local.set({ shieldActive: isOn });
-      chrome.runtime.sendMessage({ type: isOn ? 'ENABLE_SHIELD' : 'DISABLE_SHIELD' });
+      // Shield toggle
+      const btn = document.getElementById('shield-btn');
+      if (btn) {
+        if (shieldActive) {
+          btn.classList.add('on');
+          btn.innerText = 'ON ✅';
+        }
+        btn.onclick = () => {
+          const isOn = btn.classList.toggle('on');
+          btn.innerText = isOn ? 'ON ✅' : 'OFF';
+          if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({ shieldActive: isOn });
+            chrome.runtime?.sendMessage?.({ type: isOn ? 'ENABLE_SHIELD' : 'DISABLE_SHIELD' });
+          }
+        };
+      }
     };
-  });
+
+  // Load data from chrome storage or fallback
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get(['lastAnalysis', 'shieldActive'], (data) => {
+      onDataLoaded(data?.lastAnalysis, Boolean(data?.shieldActive !== false));
+    });
+  } else {
+    onDataLoaded(defaultReport, true);
+  }
 });

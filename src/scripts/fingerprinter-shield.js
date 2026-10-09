@@ -1,71 +1,80 @@
+/**
+ * ScamLens — Anti-Fingerprinting Shield (fingerprinter-shield.js)
+ * "Rules decide. AI explains."
+ * 
+ * Runs in "world": "MAIN" at document_start.
+ * Directly protects Canvas, Navigator, and Hardware fingerprinting APIs
+ * in the page context without creating DOM script tags, ensuring 100% CSP compliance.
+ */
+
 (function() {
-    // Only run if the shield is active
-    chrome.storage.local.get('shieldActive', (data) => {
-        if (!data.shieldActive) return;
+  'use strict';
 
-        console.log("[ScamLens] Anti-Fingerprinting Shield Active.");
+  try {
+    const reportDetection = (type, details) => {
+      try {
+        window.dispatchEvent(new CustomEvent('ds-telemetry-event', {
+          detail: { type: 'FINGERPRINT_ATTEMPT', detectionType: type, details: details }
+        }));
+      } catch (e) {}
+    };
 
-        // We inject the "noise" script directly into the page's execution environment
-        const script = document.createElement('script');
-        script.textContent = `
-            (function() {
-                const reportDetection = (type, details) => {
-                    window.dispatchEvent(new CustomEvent('ds-telemetry-event', {
-                        detail: { type: 'FINGERPRINT_ATTEMPT', detectionType: type, details: details }
-                    }));
-                };
-
-                // 1. Spoof Navigator properties
-                const originalNavigator = navigator;
-                const spoofedNavigator = Object.create(originalNavigator);
-                
-                Object.defineProperty(spoofedNavigator, 'plugins', { 
-                    get: () => { 
-                        reportDetection('navigator.plugins', 'Access to browser plugins');
-                        return []; 
-                    } 
-                });
-                Object.defineProperty(spoofedNavigator, 'languages', { get: () => ['en-US', 'en'] });
-                Object.defineProperty(spoofedNavigator, 'webdriver', { get: () => false });
-
-                window.navigator = spoofedNavigator;
-
-                // 2. Detect Canvas Fingerprinting
-                const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
-                HTMLCanvasElement.prototype.toDataURL = function() {
-                    reportDetection('canvas.fingerprint', 'Attempted to extract canvas image data');
-                    return originalToDataURL.apply(this, arguments);
-                };
-
-                const originalGetImageData = CanvasRenderingContext2D.prototype.getImageData;
-                CanvasRenderingContext2D.prototype.getImageData = function(x, y, w, h) {
-                    reportDetection('canvas.getImageData', 'Attempted to read canvas pixels');
-                    const imageData = originalGetImageData.apply(this, arguments);
-                    const lastIndex = imageData.data.length - 4;
-                    imageData.data[lastIndex] = (imageData.data[lastIndex] + 1) % 256;
-                    return imageData;
-                };
-
-                // 3. Hardware Fingerprinting Detection
-                if (navigator.deviceMemory) {
-                    const originalMemory = navigator.deviceMemory;
-                    Object.defineProperty(navigator, 'deviceMemory', {
-                        get: () => {
-                            reportDetection('navigator.deviceMemory', 'Attempted to read RAM size');
-                            return originalMemory;
-                        }
-                    });
-                }
-
-                console.log("[DataShadow] Execution Environment Hardened & Monitoring Active.");
-            })();
-        `;
-        (document.head || document.documentElement).appendChild(script);
-        script.remove();
-
-        // Listen for detections from the injected script and forward to background
-        window.addEventListener('ds-telemetry-event', (e) => {
-            chrome.runtime.sendMessage(e.detail);
+    // 1. Spoof / Protect Navigator Properties
+    try {
+      if (navigator.plugins) {
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => {
+            reportDetection('navigator.plugins', 'Access to browser plugins list');
+            return [];
+          },
+          configurable: true
         });
-    });
+      }
+
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => false,
+        configurable: true
+      });
+    } catch (e) {}
+
+    // 2. Protect Canvas Fingerprinting with Subtle Micro-Noise
+    try {
+      const originalGetImageData = CanvasRenderingContext2D.prototype.getImageData;
+      CanvasRenderingContext2D.prototype.getImageData = function(x, y, w, h) {
+        reportDetection('canvas.getImageData', 'Attempted to read canvas pixels');
+        const imageData = originalGetImageData.apply(this, arguments);
+        if (imageData && imageData.data && imageData.data.length > 3) {
+          const lastIndex = imageData.data.length - 4;
+          imageData.data[lastIndex] = (imageData.data[lastIndex] + 1) % 256;
+        }
+        return imageData;
+      };
+    } catch (e) {}
+
+    try {
+      const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
+      HTMLCanvasElement.prototype.toDataURL = function() {
+        reportDetection('canvas.toDataURL', 'Attempted to export canvas image data');
+        return originalToDataURL.apply(this, arguments);
+      };
+    } catch (e) {}
+
+    // 3. Hardware Fingerprinting Detection
+    try {
+      if (navigator.deviceMemory) {
+        const originalMemory = navigator.deviceMemory;
+        Object.defineProperty(navigator, 'deviceMemory', {
+          get: () => {
+            reportDetection('navigator.deviceMemory', 'Attempted to read RAM size');
+            return originalMemory;
+          },
+          configurable: true
+        });
+      }
+    } catch (e) {}
+
+    console.log("[ScamLens] Anti-Fingerprinting Shield Active (CSP Safe).");
+  } catch (err) {
+    // Fail silently to never break host page scripts
+  }
 })();

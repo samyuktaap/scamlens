@@ -4,40 +4,43 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ScamLens — Rules Decide. AI Explains. | Real-Time Link Threat Detection</title>
+    <title>ScamLens — Rules Decide. AI Explains. | AI-Powered Cybersecurity Platform</title>
+    <meta name="description" content="AI-powered cybersecurity platform and Chrome extension. 11 deterministic detection signals decide verdicts; Google Gemini translates technical risks into plain-language advice." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
     <style>
         :root {
-            --bg: #0a0805;
-            --surface: #120e09;
-            --card: #1a140d;
+            --bg: #070604;
+            --surface: #110d08;
+            --card: #18130c;
+            --card-border: rgba(193, 127, 36, 0.22);
             --accent: #c17f24;
-            --accent-dark: #8b5a10;
-            --glow: rgba(193, 127, 36, 0.25);
-            --highlight: #f5e6c8;
-            --text: #a08060;
-            --muted: #5a4030;
+            --accent-glow: rgba(193, 127, 36, 0.35);
+            --highlight: #fdf6ec;
+            --text: #a89078;
+            --muted: #6a5240;
             --border: rgba(193, 127, 36, 0.15);
-            --danger: #ff4444;
-            --warn: #ffaa00;
-            --safe: #4caf50;
+            --danger: #ef4444;
+            --warn: #f59e0b;
+            --safe: #10b981;
+            --purple: #8b5cf6;
+            --blue: #38bdf8;
         }
 
         [data-theme="light"] {
-            --bg: #fdf6ec;
-            --surface: #f5e6cc;
-            --card: #ede0cc;
-            --accent: #8b5a10;
-            --accent-dark: #5a3a08;
-            --glow: rgba(139, 90, 16, 0.15);
+            --bg: #faf6f0;
+            --surface: #f3ece0;
+            --card: #eae0cf;
+            --card-border: rgba(139, 90, 16, 0.25);
+            --accent: #9a6214;
+            --accent-glow: rgba(154, 98, 20, 0.2);
             --highlight: #1a0e05;
-            --text: #5a3a1a;
-            --muted: #8a6a4a;
-            --border: rgba(139, 90, 16, 0.2);
+            --text: #5a3c20;
+            --muted: #8c6a4a;
+            --border: rgba(154, 98, 20, 0.18);
         }
 
         * {
@@ -51,24 +54,52 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             line-height: 1.6;
             overflow-x: hidden;
-            transition: background-color 0.4s ease, color 0.4s ease;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 2rem;
+            padding: 0 1.5rem;
         }
 
         a {
             text-decoration: none;
             color: inherit;
-            transition: 0.3s;
+        }
+
+        /* ===== BACKGROUND GLOWS ===== */
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .blob-1 {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(193, 127, 36, 0.08) 0%, transparent 70%);
+            top: -150px;
+            left: -150px;
+            filter: blur(80px);
+        }
+
+        .blob-2 {
+            position: absolute;
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.06) 0%, transparent 70%);
+            bottom: 10%;
+            right: -200px;
+            filter: blur(100px);
         }
 
         /* ===== NAVIGATION ===== */
@@ -77,11 +108,11 @@
             top: 0;
             width: 100%;
             z-index: 1000;
-            background: rgba(10, 8, 5, 0.9);
+            background: rgba(7, 6, 4, 0.88);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
-            box-shadow: 0 1px 0 rgba(193, 127, 36, 0.2);
-            padding: 1rem 0;
+            padding: 0.9rem 0;
         }
 
         nav .container {
@@ -90,1385 +121,320 @@
             align-items: center;
         }
 
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .logo {
-            font-size: 1.7rem;
+            font-size: 1.45rem;
             font-weight: 900;
             color: var(--highlight);
-            letter-spacing: -0.05em;
+            letter-spacing: -0.04em;
+        }
+
+        .logo-shield-pulse {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 12px #10b981;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
         }
 
         .nav-links {
             display: flex;
-            gap: 2.5rem;
+            gap: 1.6rem;
+            align-items: center;
         }
 
         .nav-links a {
-            font-size: 0.78rem;
+            font-size: 0.82rem;
             font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
+            color: var(--text);
+            transition: color 0.2s;
         }
 
         .nav-links a:hover {
             color: var(--highlight);
         }
 
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
         .btn-accent {
             background: var(--accent);
-            color: white;
-            padding: 0.8rem 1.8rem;
-            border-radius: 4px;
-            font-weight: 600;
-            font-size: 0.9rem;
+            color: #ffffff;
+            padding: 0.65rem 1.4rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
             border: none;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.25s;
             box-shadow: 0 4px 15px rgba(193, 127, 36, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn-accent:hover {
             transform: translateY(-2px);
-            box-shadow: 0 0 25px rgba(193, 127, 36, 0.6);
+            box-shadow: 0 6px 25px rgba(193, 127, 36, 0.5);
+            background: #d88f28;
         }
 
-        /* ===== HERO ===== */
-        .hero {
-            padding: 12rem 0 8rem;
-            display: flex;
-            align-items: center;
-            min-height: 90vh;
-        }
-
-        .hero-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-        }
-
-        .hero-badge {
-            display: inline-block;
-            padding: 0.4rem 1rem;
-            background: rgba(193, 127, 36, 0.1);
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border);
-            border-radius: 4px;
-            color: var(--accent);
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 2rem;
-        }
-
-        .hero h1 {
-            font-size: clamp(3rem, 7vw, 5.5rem);
-            font-weight: 900;
-            line-height: 1.05;
-            letter-spacing: -0.05em;
             color: var(--highlight);
-            margin-bottom: 2rem;
-        }
-
-        .hero h1 span {
-            text-shadow: 0 0 40px rgba(193, 127, 36, 0.5);
-        }
-
-        .hero-stats {
-            display: flex;
-            gap: 0.8rem;
-            margin-bottom: 2.5rem;
-            flex-wrap: wrap;
-        }
-
-        .stat-pill {
-            background: rgba(193, 127, 36, 0.08);
-            border: 1px solid rgba(193, 127, 36, 0.2);
-            border-radius: 100px;
-            padding: 6px 16px;
-            font-size: 0.8rem;
-            color: var(--highlight);
-            font-weight: 500;
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            color: var(--text);
-            max-width: 500px;
-            margin-bottom: 3rem;
-        }
-
-        /* ===== CSS MOCKUP ===== */
-        .mockup-wrap {
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .extension-mockup {
-            width: 320px;
-            background: linear-gradient(135deg, #1a140d, #211508);
-            border: 1px solid rgba(193, 127, 36, 0.15);
-            border-top: 2px solid #c17f24;
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 0 0 1px rgba(193, 127, 36, 0.3),
-                0 0 60px rgba(193, 127, 36, 0.15),
-                0 40px 80px rgba(0, 0, 0, 0.6);
-            transform: perspective(1000px) rotateY(-5deg);
-            animation: cardFloat 4s ease-in-out infinite;
-        }
-
-        @keyframes cardFloat {
-
-            0%,
-            100% {
-                transform: perspective(1000px) rotateY(-5deg) translateY(0);
-            }
-
-            50% {
-                transform: perspective(1000px) rotateY(-5deg) translateY(-8px);
-            }
-        }
-
-        .popup-header {
-            display: flex;
-            justify-content: space-between;
+            padding: 0.65rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: inline-flex;
             align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.8rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            gap: 6px;
         }
 
-        .popup-logo {
-            font-weight: 800;
-            color: white;
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent);
+        }
+
+        .theme-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--highlight);
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
             font-size: 1rem;
-        }
-
-        .popup-status {
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 4px 10px;
-            border-radius: 4px;
-            background: rgba(0, 230, 118, 0.1);
-            color: var(--safe);
-            border: 1px solid rgba(0, 230, 118, 0.2);
-            text-transform: uppercase;
-        }
-
-        .popup-stat {
-            margin-bottom: 1.2rem;
-        }
-
-        .stat-val {
-            display: block;
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--highlight);
-            line-height: 1;
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--muted);
-            margin-bottom: 0.4rem;
-            display: block;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(193, 127, 36, 0.2);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 6px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: #c17f24;
-            width: 78%;
-        }
-
-        .popup-info-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75rem;
-            color: var(--muted);
-            margin-bottom: 1.5rem;
-        }
-
-        .risk-badges {
-            display: flex;
-            gap: 6px;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .r-badge {
-            font-size: 0.6rem;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 3px;
-        }
-
-        .r-safe {
-            color: #00e676;
-            background: rgba(0, 230, 118, 0.1);
-        }
-
-        .r-mod {
-            color: #ffaa00;
-            background: rgba(255, 170, 0, 0.1);
-        }
-
-        .r-dan {
-            color: #ff2d6b;
-            background: rgba(255, 45, 107, 0.1);
-        }
-
-        .popup-footer {
-            margin-top: 1rem;
-            font-size: 0.7rem;
-            color: var(--accent);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .pulse-dot {
-            width: 8px;
-            height: 8px;
-            background: #00e676;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #00e676;
-            animation: pulseGreen 2s infinite;
-        }
-
-        @keyframes pulseGreen {
-            0% {
-                box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7);
-            }
-
-            70% {
-                box-shadow: 0 0 0 8px rgba(0, 230, 118, 0);
-            }
-
-            100% {
-                box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
-            }
-        }
-
-        /* ===== CAROUSEL SYSTEM ===== */
-        .section-label {
-            color: var(--accent);
-            font-size: 0.85rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-
-        .section-title {
-            font-size: 3rem;
-            font-weight: 900;
-            color: var(--highlight);
-            text-align: center;
-            margin-bottom: 4rem;
-            letter-spacing: -0.04em;
-        }
-
-        .carousel-container {
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            overflow: hidden;
-            padding: 4rem 0;
-        }
-
-        .carousel-track {
-            display: flex;
-            gap: 2.5rem;
-            align-items: center;
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .card {
-            flex: 0 0 350px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2.5rem;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 0.6;
-            transform: scale(0.95);
-        }
-
-        .card.active {
-            opacity: 1;
-            transform: scale(1.03);
-            border: 1px solid var(--accent);
-            box-shadow: 0 0 0 2px #c17f24, 0 0 20px rgba(193, 127, 36, 0.3);
-            background: var(--surface);
-        }
-
-        .card-icon {
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--highlight);
-            margin-bottom: 1rem;
-        }
-
-        .card-title .card-title {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--highlight);
-            margin-bottom: 1rem;
-        }
-
-        .card-text {
-            font-size: 0.95rem;
-            color: var(--text);
-        }
-
-        /* ===== HOW IT WORKS ===== */
-        .how-it-works {
-            padding: 10rem 0;
-            background: var(--surface);
-        }
-
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        .step-card {
-            padding: 3rem 2rem;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            text-align: center;
-            transition: 0.3s;
-        }
-
-        .step-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-5px);
-        }
-
-        .step-num {
-            width: 40px;
-            height: 40px;
-            background: var(--accent);
-            color: white;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 2rem;
-            font-weight: 900;
-        }
-
-        .step-title {
-            color: var(--highlight);
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
-
-        /* ===== INSTALL SECTION ===== */
-        #install {
-            padding: 10rem 0;
-        }
-
-        .install-cta-wrap {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .install-progress {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 2rem 0 3rem;
-            flex-wrap: wrap;
-            gap: 0;
-        }
-
-        .prog-step {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.8rem;
-            color: var(--muted);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .prog-step .pnum {
-            width: 26px;
-            height: 26px;
-            background: rgba(193, 127, 36, 0.15);
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            font-weight: 900;
-            color: #c17f24;
-        }
-
-        .prog-line {
-            width: 50px;
-            height: 1px;
-            background: var(--border);
-            margin: 0 0.5rem;
-        }
-
-        .install-steps {
-            max-width: 760px;
-            margin: 0 auto;
-        }
-
-        .istep {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            background: var(--card);
-            border-left: 3px solid #c17f24;
-            border-radius: 8px;
-            padding: 1.2rem 1.5rem;
-            margin-bottom: 0.8rem;
-        }
-
-        .istep-num {
-            background: #c17f24;
-            color: white;
-            width: 26px;
-            height: 26px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 900;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
-        .istep-text {
-            color: #f0eeff;
-            font-size: 0.9rem;
-            line-height: 1.6;
-        }
-
-        .istep-text code {
-            background: rgba(193, 127, 36, 0.12);
-            color: var(--highlight);
-            padding: 2px 10px;
-            border-radius: 4px;
-            border: 1px solid rgba(193, 127, 36, 0.2);
-            font-size: 0.85rem;
-            font-family: 'Courier New', monospace;
-        }
-
-        .accordion {
-            max-width: 760px;
-            margin: 2rem auto 0;
-        }
-
-        .accordion-toggle {
-            width: 100%;
-            background: rgba(112, 0, 255, 0.05);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem 1.5rem;
-            color: var(--highlight);
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-align: left;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: 0.3s;
-        }
-
-        .accordion-toggle:hover {
-            border-color: var(--accent);
-        }
-
-        .accordion-toggle .chevron {
-            transition: transform 0.3s;
-            font-size: 0.8rem;
-            color: var(--accent);
-        }
-
-        .accordion-body {
-            display: none;
-            padding-top: 0.8rem;
-        }
-
-        .accordion-body.open {
-            display: block;
-        }
-
-        /* ===== INSTALL MODAL ===== */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
-            z-index: 9000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.35s ease;
-            padding: 1rem;
-        }
-        .modal-overlay.open {
-            opacity: 1;
-            pointer-events: all;
-        }
-        .modal-box {
-            background: #120e09;
-            border: 1px solid rgba(193,127,36,0.3);
-            border-top: 3px solid #c17f24;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 640px;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 2.5rem;
-            position: relative;
-            box-shadow: 0 0 0 1px rgba(193,127,36,0.1), 0 40px 80px rgba(0,0,0,0.8);
-            transform: translateY(30px);
-            transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
-        }
-        .modal-overlay.open .modal-box {
-            transform: translateY(0);
-        }
-        .modal-close {
-            position: absolute;
-            top: 1.2rem;
-            right: 1.2rem;
-            background: rgba(193,127,36,0.1);
-            border: 1px solid rgba(193,127,36,0.2);
-            color: #c17f24;
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.1rem;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: 0.2s;
         }
-        .modal-close:hover { background: rgba(193,127,36,0.25); }
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 900;
-            color: #f5e6c8;
-            margin-bottom: 0.4rem;
-            letter-spacing: -0.03em;
-        }
-        .modal-subtitle {
-            color: #a08060;
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
-        }
-        /* Step tracker dots */
-        .step-dots {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 2rem;
-            align-items: center;
-        }
-        .step-dot {
-            width: 28px;
-            height: 6px;
-            background: rgba(193,127,36,0.15);
-            border-radius: 3px;
-            transition: 0.4s;
-            flex: 1;
-        }
-        .step-dot.done { background: #c17f24; }
-        .step-dot.active { background: #f0a030; box-shadow: 0 0 8px rgba(240,160,48,0.5); }
-        /* Folder tree */
-        .folder-tree {
-            background: #0d0a06;
-            border: 1px solid rgba(193,127,36,0.2);
-            border-radius: 8px;
-            padding: 0.9rem 1.1rem;
-            margin-top: 1rem;
-            font-family: 'Courier New', monospace;
-            font-size: 0.82rem;
-            line-height: 1.9;
-            color: #8a7060;
-        }
-        .folder-tree .ft-root  { color: #f0a030; font-weight: 800; }
-        .folder-tree .ft-hl    { color: #f5e6c8; font-weight: 700; background: rgba(240,160,48,0.12); padding: 0 6px; border-radius: 3px; }
-        .folder-tree .ft-dim   { color: #4a3828; }
-        .ft-tip {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            margin-top: 0.9rem;
-            background: rgba(240,160,48,0.08);
-            border: 1px solid rgba(240,160,48,0.2);
-            border-radius: 6px;
-            padding: 0.6rem 0.9rem;
-            font-size: 0.82rem;
-            color: #d4a855;
-            line-height: 1.5;
-        }
-        .ft-tip-icon { flex-shrink: 0; font-size: 1rem; margin-top: 1px; }
-        /* ===== SINGLE STEP CARD ===== */
-        .step-card-view {
-            position: relative;
-            overflow: hidden;
-            min-height: 180px;
-        }
-        .step-slide {
-            background: #1e1509;
-            border: 1px solid rgba(193,127,36,0.25);
-            border-left: 4px solid #f0a030;
-            border-radius: 10px;
-            padding: 1.8rem 1.6rem;
-            animation: slideInStep 0.35s cubic-bezier(0.4,0,0.2,1);
-        }
-        @keyframes slideInStep {
-            from { opacity: 0; transform: translateX(40px); }
-            to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInStepBack {
-            from { opacity: 0; transform: translateX(-40px); }
-            to   { opacity: 1; transform: translateX(0); }
-        }
-        .slide-back { animation: slideInStepBack 0.35s cubic-bezier(0.4,0,0.2,1); }
-        .step-icon-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(193,127,36,0.12);
-            border: 1px solid rgba(193,127,36,0.25);
-            border-radius: 6px;
-            padding: 0.3rem 0.8rem;
-            font-size: 0.72rem;
-            font-weight: 800;
-            color: #c17f24;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 1rem;
-        }
-        .step-main-title {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: #f5e6c8;
-            margin-bottom: 0.8rem;
-            letter-spacing: -0.02em;
-        }
-        .step-main-desc {
-            color: #b09070;
-            font-size: 0.92rem;
-            line-height: 1.75;
-        }
-        .step-main-desc code {
-            background: rgba(193,127,36,0.12);
-            color: #f5e6c8;
-            padding: 2px 9px;
-            border-radius: 4px;
-            border: 1px solid rgba(193,127,36,0.2);
-            font-size: 0.84rem;
-            font-family: 'Courier New', monospace;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-block;
-        }
-        .step-main-desc code:hover { background: rgba(193,127,36,0.28); }
-        .step-main-desc strong { color: #f5e6c8; }
-        /* Checklist sidebar */
-        .step-sidebar {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 1.2rem;
-            flex-wrap: wrap;
-        }
-        .sbar-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            color: #5a4030;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 3px 8px;
-            border-radius: 4px;
-            background: rgba(193,127,36,0.06);
-            border: 1px solid rgba(193,127,36,0.1);
-            transition: 0.3s;
-        }
-        .sbar-item.done { color: #c17f24; background: rgba(193,127,36,0.12); border-color: rgba(193,127,36,0.25); }
-        .sbar-item.active { color: #f5e6c8; background: rgba(240,160,48,0.15); border-color: rgba(240,160,48,0.4); }
-        .sbar-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-        /* Nav */
-        .modal-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1.6rem;
-            gap: 1rem;
-        }
-        .modal-btn {
-            padding: 0.7rem 1.8rem;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: 0.25s;
-            border: none;
-        }
-        .modal-btn-primary {
-            background: #c17f24;
-            color: white;
-            box-shadow: 0 4px 15px rgba(193,127,36,0.35);
-        }
-        .modal-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(193,127,36,0.5); }
-        .modal-btn-secondary {
-            background: rgba(193,127,36,0.1);
-            border: 1px solid rgba(193,127,36,0.25);
-            color: #c17f24;
-        }
-        .modal-btn-secondary:hover { background: rgba(193,127,36,0.2); }
-        .modal-counter { color: #5a4030; font-size: 0.8rem; font-weight: 600; }
-        /* Done screen */
-        .done-banner {
-            text-align: center;
-            padding: 2rem 1rem;
-            display: none;
-        }
-        .done-banner.visible { display: block; }
-        .done-icon { font-size: 3.5rem; margin-bottom: 1rem; animation: popIn 0.5s cubic-bezier(0.4,0,0.2,1); }
-        @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to   { transform: scale(1); opacity: 1; }
-        }
-        .done-title { font-size: 1.6rem; font-weight: 900; color: #f5e6c8; margin-bottom: 0.5rem; }
-        .done-sub { color: #a08060; font-size: 0.9rem; }
 
-        /* ===== FOOTER ===== */
-        footer {
-            padding: 6rem 0;
-            border-top: 1px solid var(--border);
-            text-align: center;
-        }
-
-        .footer-logo {
-            font-size: 1.5rem;
-            font-weight: 900;
-            color: white;
-            margin-bottom: 1rem;
-        }
-
-        .footer-tagline {
-            color: var(--muted);
-            margin-bottom: 3rem;
-        }
-
-        .github-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 0.6rem 1.4rem;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            color: var(--muted);
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .github-btn:hover {
-            color: var(--highlight);
+        .theme-btn:hover {
             border-color: var(--accent);
         }
 
-        /* Toast */
-        #toast-container {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            z-index: 2000;
-        }
-
-        .toast {
-            background: var(--card);
-            border: 1px solid var(--accent);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-top: 1rem;
-            transform: translateX(120%);
-            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .toast.visible {
-            transform: translateX(0);
-        }
-
-        /* ===== BACKGROUND DESIGN ===== */
-        .bg-layer {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-        .grid-bg {
-            position: absolute;
-            inset: 0;
-            background-image: radial-gradient(rgba(193, 127, 36, 0.12) 1px, transparent 1px);
-            background-size: 25px 25px;
-        }
-
-        /* Scanline texture */
-        .scanlines {
-            position: absolute;
-            inset: 0;
-            background-image: repeating-linear-gradient(0deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(193, 127, 36, 0.01) 2px,
-                    rgba(193, 127, 36, 0.01) 4px);
-            pointer-events: none;
-        }
-
-        /* Sweeping beam */
-        .beam {
-            position: fixed;
-            top: -40%;
-            left: 0;
-            width: 100%;
-            height: 40%;
-            background: linear-gradient(180deg, transparent, rgba(193, 127, 36, 0.03), transparent);
-            animation: beamSweep 8s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        @keyframes beamSweep {
-            0% {
-                top: -40%;
-            }
-
-            100% {
-                top: 120%;
-            }
-        }
-
-        .blob {
-            position: absolute;
-            width: 900px;
-            height: 900px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(193, 127, 36, 0.12), transparent 70%);
-            filter: blur(120px);
-            animation: blobFloat 15s ease-in-out infinite alternate;
-        }
-
-        .blob-1 {
-            top: -300px;
-            left: -300px;
-        }
-
-        .blob-2 {
-            bottom: -300px;
-            right: -300px;
-            animation-delay: -10s;
-        }
-
-        .blob-3 {
-            top: 40%;
-            right: -300px;
-            width: 700px;
-            height: 700px;
-            opacity: 0.18;
-        }
-
-        @keyframes blobFloat {
-            from {
-                transform: translate(0, 0) scale(1);
-            }
-
-            to {
-                transform: translate(80px, 40px) scale(1.08);
-            }
-        }
-
-        /* Particles */
-        .particle {
-            position: absolute;
-            background: rgba(193, 127, 36, 0.5);
-            border-radius: 50%;
-            animation: particleRise 10s linear infinite;
-            box-shadow: 0 0 12px rgba(193, 127, 36, 0.7);
-        }
-
-        @keyframes particleRise {
-            0% {
-                transform: translateY(100vh) scale(0);
-                opacity: 0;
-            }
-
-            20% {
-                opacity: 1;
-            }
-
-            80% {
-                opacity: 1;
-            }
-
-            100% {
-                transform: translateY(-100px) scale(1);
-                opacity: 0;
-            }
-        }
-
-        /* Hero Rings */
-        .hero-rings {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        .ring {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border: 1px solid rgba(193, 127, 36, 0.08);
-            border-radius: 50%;
-        }
-
-        .ring-1 {
-            width: 500px;
-            height: 500px;
-            animation: rotate 20s linear infinite;
-        }
-
-        .ring-2 {
-            width: 450px;
-            height: 450px;
-            animation: rotate-rev 30s linear infinite;
-        }
-
-        @keyframes rotate {
-            from {
-                transform: translate(-50%, -50%) rotate(0deg);
-            }
-
-            to {
-                transform: translate(-50%, -50%) rotate(360deg);
-            }
-        }
-
-        @keyframes rotate-rev {
-            from {
-                transform: translate(-50%, -50%) rotate(0deg);
-            }
-
-            to {
-                transform: translate(-50%, -50%) rotate(-360deg);
-            }
-        }
-
-        /* Section Dividers */
-        .divider {
-            width: 100%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(193, 127, 36, 0.3), transparent);
-        }
-
-        /* ===== FAQ SECTION ===== */
-        .faq-item {
-            background: var(--card);
-            border: 1px solid rgba(193, 127, 36, 0.15);
-            border-radius: 8px;
-            margin-bottom: 0.8rem;
-            overflow: hidden;
-            transition: border-color 0.3s;
-        }
-
-        .faq-item.open {
-            border-color: rgba(193, 127, 36, 0.4);
-        }
-
-        .faq-item.open .faq-q {
-            color: #c17f24;
-        }
-
-        .faq-q {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.2rem 1.5rem;
-            cursor: pointer;
-            color: var(--highlight);
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: color 0.3s;
-        }
-
-        .faq-icon {
-            font-size: 1.3rem;
-            font-weight: 300;
-            color: var(--accent);
-            transition: transform 0.3s;
-            line-height: 1;
-        }
-
-        .faq-item.open .faq-icon {
-            content: '\2212';
-            transform: rotate(45deg);
-        }
-
-        .faq-a {
-            max-height: 0;
-            overflow: hidden;
-            color: var(--text);
-            font-size: 0.9rem;
-            padding: 0 1.5rem;
-            line-height: 1.7;
-            transition: max-height 0.35s ease, padding 0.3s ease;
-        }
-
-        .faq-item.open .faq-a {
-            max-height: 200px;
-            padding: 0 1.5rem 1.2rem;
-        }
-
-        /* Binary background pulse */
-        @keyframes binaryPulse {
-            from {
-                opacity: 0.3;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        /* ===== LIGHT THEME — INSTALL SECTION OVERRIDES ===== */
-        [data-theme="light"] .istep {
-            background: #ffffff;
-            border-left: 3px solid #8b5a10;
-            border-color: rgba(139, 90, 16, 0.25);
-            border-left-color: #8b5a10;
-        }
-
-        [data-theme="light"] .istep-text {
-            color: #2a1a08;
-        }
-
-        [data-theme="light"] .istep-text strong {
-            color: #5a3000;
-        }
-
-        [data-theme="light"] .istep-text code {
-            background: rgba(139, 90, 16, 0.1);
-            color: #5a3000;
-            border: 1px solid rgba(139, 90, 16, 0.3);
-        }
-
-        [data-theme="light"] .install-progress {
-            color: #2a1a08;
-        }
-
-        [data-theme="light"] .prog-step {
-            color: #2a1a08;
-        }
-
-        [data-theme="light"] .prog-line {
-            background: rgba(139, 90, 16, 0.3);
-        }
-
-        [data-theme="light"] .prog-step .pnum {
-            background: #8b5a10;
-            color: white;
-            border-color: #8b5a10;
-        }
-
-        [data-theme="light"] #install .section-title,
-        [data-theme="light"] #install .section-label {
-            color: #1a0e05;
-        }
-
-        [data-theme="light"] .install-cta-wrap p {
-            color: #5a3a1a;
-        }
-
-        [data-theme="light"] .accordion-toggle {
-            background: rgba(139, 90, 16, 0.06);
-            color: #2a1a08;
-            border-color: rgba(139, 90, 16, 0.25);
-        }
-
-        [data-theme="light"] .accordion-body .istep-text {
-            color: #5a3a1a;
-        }
-
-        /* Light theme — footer */
-        [data-theme="light"] footer {
-            background: #ede0cc;
-            border-top: 1px solid rgba(139, 90, 16, 0.2);
-        }
-
-        [data-theme="light"] .footer-logo {
-            color: #1a0e05;
-        }
-
-        [data-theme="light"] .footer-tagline {
-            color: #5a3a1a;
-        }
-
-        [data-theme="light"] .github-btn {
-            color: #3a2010;
-            border-color: rgba(139, 90, 16, 0.3);
-        }
-
-        [data-theme="light"] .github-btn:hover {
-            color: #8b5a10;
-            border-color: #8b5a10;
-        }
-
-        /* Light theme — install step bold/code text */
-        [data-theme="light"] .istep-text strong,
-        [data-theme="light"] .istep-text b {
-            color: #8b5a10;
-            font-weight: 700;
-        }
-
-        [data-theme="light"] .istep-text code {
-            color: #5a3000;
-            background: rgba(139, 90, 16, 0.12);
-            border: 1px solid rgba(139, 90, 16, 0.25);
-        }
-
-        /* Light theme — navbar logo */
-        [data-theme="light"] .logo {
-            color: #5a3000;
-        }
-
-        /* Light theme — strong/bold text in install steps */
-        [data-theme="light"] #install strong,
-        [data-theme="light"] #install b {
-            color: #5a3000 !important;
-            font-weight: 700;
-        }
-
-        [data-theme="light"] #install code {
-            color: #5a3000 !important;
-            background: rgba(139, 90, 16, 0.12) !important;
-            border: 1px solid rgba(139, 90, 16, 0.3) !important;
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 992px) {
-            .hero-grid {
-                grid-template-columns: 1fr;
-                text-align: center;
-            }
-
-            .hero p {
-                margin: 0 auto 3rem;
-            }
-
-            .mockup-wrap {
-                justify-content: center;
-            }
-
-            .hero h1 {
-                font-size: 3.5rem;
-            }
-
-            .steps-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* ===== LIVE SCAMLENS SCANNER STYLES ===== */
-        .scanner-section {
-            padding: 3rem 0 5rem;
+        /* ===== MAIN HERO & COMMAND CENTER ===== */
+        .hero-section {
+            padding: 7.5rem 0 3.5rem;
             position: relative;
             z-index: 10;
         }
-        .scanner-card {
-            background: linear-gradient(180deg, #16120b, #100d08);
-            border: 1px solid rgba(193, 127, 36, 0.35);
-            border-radius: 16px;
-            padding: 2.5rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(193, 127, 36, 0.12);
-            max-width: 960px;
-            margin: 0 auto;
+
+        .hero-headline-wrap {
+            text-align: center;
+            max-width: 820px;
+            margin: 0 auto 2.5rem;
         }
-        .scanner-header-tag {
-            display: inline-block;
-            font-size: 0.75rem;
-            font-weight: 700;
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.4rem 1.1rem;
+            background: rgba(193, 127, 36, 0.12);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--accent);
+            font-size: 0.76rem;
+            font-weight: 800;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-            color: var(--accent);
-            background: rgba(193, 127, 36, 0.1);
-            border: 1px solid rgba(193, 127, 36, 0.2);
-            padding: 4px 12px;
-            border-radius: 4px;
-            margin-bottom: 0.8rem;
+            margin-bottom: 1.2rem;
         }
-        .scanner-title {
-            font-size: 2rem;
-            font-weight: 800;
+
+        .hero-title {
+            font-size: clamp(2.4rem, 5vw, 3.8rem);
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -0.04em;
             color: var(--highlight);
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.02em;
+            margin-bottom: 1.2rem;
         }
-        .scanner-subtitle {
-            font-size: 1rem;
+
+        .hero-title span {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 1.15rem;
             color: var(--text);
+            line-height: 1.6;
             margin-bottom: 1.8rem;
-            line-height: 1.5;
         }
+
+        .hero-pills {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+        }
+
+        .hero-pill {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--highlight);
+        }
+
+        /* ===== INTERACTIVE SCANNER CARD (HERO COMMAND CENTER) ===== */
+        .scanner-card {
+            background: linear-gradient(180deg, #17120a, #0f0c07);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 2.2rem;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7), 0 0 40px rgba(193, 127, 36, 0.12);
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
         .scanner-input-wrap {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             margin-bottom: 1rem;
         }
+
         .scanner-input {
             flex: 1;
-            background: #0d0a06;
-            border: 1px solid rgba(193, 127, 36, 0.4);
-            border-radius: 8px;
-            padding: 0.9rem 1.4rem;
-            font-size: 1rem;
+            background: #090704;
+            border: 1px solid rgba(193, 127, 36, 0.35);
+            border-radius: 10px;
+            padding: 0.95rem 1.4rem;
+            font-size: 1.02rem;
             color: #ffffff;
             font-family: inherit;
             outline: none;
             transition: all 0.2s;
         }
+
         .scanner-input:focus {
-            border-color: #c17f24;
-            box-shadow: 0 0 18px rgba(193, 127, 36, 0.35);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(193, 127, 36, 0.35);
         }
+
         .presets-label {
-            font-size: 0.75rem;
+            font-size: 0.74rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--muted);
             margin-bottom: 0.6rem;
         }
+
         .presets-wrap {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-bottom: 2rem;
+            margin-bottom: 1.8rem;
         }
+
         .preset-chip {
             background: rgba(193, 127, 36, 0.08);
             border: 1px solid rgba(193, 127, 36, 0.22);
             color: #e5d5be;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 600;
-            padding: 6px 14px;
-            border-radius: 20px;
+            padding: 6px 12px;
+            border-radius: 16px;
             cursor: pointer;
             transition: all 0.2s;
         }
+
         .preset-chip:hover {
             background: rgba(193, 127, 36, 0.25);
-            border-color: #c17f24;
+            border-color: var(--accent);
             color: #ffffff;
         }
+
         .scanner-results-card {
-            background: #0d0a06;
+            background: #0a0805;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 1.8rem;
             transition: all 0.3s;
         }
+
         .scanner-results-card.state-safe {
             border-color: rgba(16, 185, 129, 0.5);
-            background: linear-gradient(180deg, #0d0a06 0%, rgba(16, 185, 129, 0.08) 100%);
+            background: linear-gradient(180deg, #0a0805 0%, rgba(16, 185, 129, 0.08) 100%);
         }
+
         .scanner-results-card.state-suspicious {
             border-color: rgba(245, 158, 11, 0.5);
-            background: linear-gradient(180deg, #0d0a06 0%, rgba(245, 158, 11, 0.08) 100%);
+            background: linear-gradient(180deg, #0a0805 0%, rgba(245, 158, 11, 0.08) 100%);
         }
+
         .scanner-results-card.state-dangerous {
             border-color: rgba(239, 68, 68, 0.5);
-            background: linear-gradient(180deg, #0d0a06 0%, rgba(239, 68, 68, 0.08) 100%);
+            background: linear-gradient(180deg, #0a0805 0%, rgba(239, 68, 68, 0.08) 100%);
         }
+
         .res-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
         }
+
         .verdict-tag {
             font-size: 1.5rem;
             font-weight: 900;
             letter-spacing: 0.5px;
         }
+
         .state-safe .verdict-tag { color: #10b981; }
         .state-suspicious .verdict-tag { color: #f59e0b; }
         .state-dangerous .verdict-tag { color: #ef4444; }
+
         .score-pill-res {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             padding: 6px 16px;
             border-radius: 20px;
             font-weight: 800;
             color: #ffffff;
             font-size: 0.9rem;
         }
+
         .score-bar-track {
             width: 100%;
-            height: 6px;
+            height: 7px;
             background: rgba(255, 255, 255, 0.08);
-            border-radius: 3px;
+            border-radius: 4px;
             overflow: hidden;
             margin-bottom: 1.2rem;
         }
+
         .score-bar-fill {
             height: 100%;
             width: 0%;
             transition: width 0.4s ease, background 0.4s ease;
         }
+
         .source-pill {
             display: inline-block;
             font-size: 0.75rem;
@@ -1477,30 +443,35 @@
             border-radius: 12px;
             margin-bottom: 1rem;
         }
+
         .source-pill.source-rules {
             background: rgba(255, 255, 255, 0.08);
             color: #94a3b8;
             border: 1px solid rgba(255, 255, 255, 0.12);
         }
+
         .source-pill.source-gemini {
             background: rgba(139, 92, 246, 0.2);
             color: #c4b5fd;
             border: 1px solid rgba(139, 92, 246, 0.4);
         }
+
         .explanation-res {
             font-size: 1.05rem;
             color: #f1f5f9;
             line-height: 1.55;
             margin-bottom: 1.4rem;
         }
+
         .sec-sub-title {
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--muted);
-            margin: 1rem 0 0.5rem;
+            margin: 1.2rem 0 0.5rem;
         }
+
         .signals-list-wrap {
             list-style: none;
             display: flex;
@@ -1508,22 +479,26 @@
             gap: 6px;
             margin-bottom: 1.2rem;
         }
+
         .sig-item {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 6px;
             padding: 8px 12px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             display: flex;
             align-items: center;
             gap: 10px;
             color: #e2e8f0;
         }
+
         .sig-empty {
-            color: #94a3b8;
-            font-size: 0.9rem;
+            color: #10b981;
+            font-size: 0.88rem;
             padding: 6px 0;
+            font-weight: 600;
         }
+
         .sig-tag {
             background: rgba(239, 68, 68, 0.2);
             color: #fca5a5;
@@ -1532,6 +507,7 @@
             border-radius: 4px;
             font-size: 0.75rem;
         }
+
         .advice-list-wrap {
             list-style: none;
             display: flex;
@@ -1539,14 +515,16 @@
             gap: 6px;
             margin-bottom: 1.2rem;
         }
+
         .adv-item {
             background: rgba(193, 127, 36, 0.1);
-            border-left: 3px solid #c17f24;
+            border-left: 3px solid var(--accent);
             padding: 8px 12px;
             border-radius: 4px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: #f5e6c8;
         }
+
         .gemini-action-wrap {
             display: flex;
             align-items: center;
@@ -1556,8 +534,9 @@
             border-top: 1px solid rgba(255, 255, 255, 0.08);
             flex-wrap: wrap;
         }
+
         .btn-gemini-ai {
-            background: linear-gradient(135deg, #4338ca, #312e81);
+            background: linear-gradient(135deg, #4f46e5, #3730a3);
             border: 1px solid #6366f1;
             color: #ffffff;
             font-weight: 700;
@@ -1567,168 +546,674 @@
             font-size: 0.85rem;
             transition: all 0.2s;
         }
+
         .btn-gemini-ai:hover:not(:disabled) {
-            background: #4f46e5;
+            background: #4338ca;
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
         }
+
         .btn-gemini-ai:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
+
         .deep-status {
             font-size: 0.85rem;
             color: #94a3b8;
         }
+
         .deep-status.active {
             color: #818cf8;
+        }
+
+        /* ===== COMMON SECTION HEADINGS ===== */
+        .section-header {
+            text-align: center;
+            max-width: 680px;
+            margin: 0 auto 3rem;
+        }
+
+        .section-tag {
+            display: inline-block;
+            font-size: 0.74rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.8px;
+            color: var(--accent);
+            margin-bottom: 0.6rem;
+        }
+
+        .section-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--highlight);
+            margin-bottom: 0.8rem;
+        }
+
+        .section-desc {
+            font-size: 1rem;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .section-padding {
+            padding: 5.5rem 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 0 auto;
+            max-width: 1100px;
+        }
+
+        /* ===== SECTION 2: TELEMETRY & CHARTS DASHBOARD ===== */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .tele-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.4));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.6rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tele-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        .tele-val {
+            font-size: 2.3rem;
+            font-weight: 900;
+            color: #ffffff;
+            margin: 0.4rem 0;
+            letter-spacing: -0.03em;
+        }
+
+        .tele-label {
+            font-size: 0.78rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .tele-sub {
+            font-size: 0.75rem;
+            color: #34d399;
+            font-weight: 600;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.8rem;
+            margin-bottom: 2.5rem;
+        }
+
+        @media (max-width: 850px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+
+        .chart-box {
+            background: linear-gradient(180deg, #120e09, #090704);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.8rem;
+        }
+
+        .chart-box-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--highlight);
+            margin-bottom: 0.3rem;
+        }
+
+        .chart-box-sub {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-bottom: 1.2rem;
+        }
+
+        .chart-canvas-wrap {
+            position: relative;
+            height: 240px;
+            width: 100%;
+        }
+
+        /* ===== TRACKER BENCHMARK ===== */
+        .sim-box {
+            background: #090704;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.8rem;
+        }
+
+        .sim-log {
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 14px;
+            font-family: monospace;
+            font-size: 0.82rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sim-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #cbd5e1;
+        }
+
+        .sim-badge {
+            background: rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .sim-domain {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .sim-meta {
+            color: #64748b;
+        }
+
+        /* ===== SECTION 3: WHAT-IF THREAT SANDBOX ===== */
+        .sandbox-wrap {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 2rem;
+            background: linear-gradient(180deg, #140f09, #090704);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 2.2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        @media (max-width: 900px) {
+            .sandbox-wrap { grid-template-columns: 1fr; }
+        }
+
+        .sandbox-toggles {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sandbox-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sandbox-toggle-row:hover {
+            background: rgba(193, 127, 36, 0.08);
+            border-color: rgba(193, 127, 36, 0.3);
+        }
+
+        .toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toggle-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .toggle-pts {
+            background: rgba(193, 127, 36, 0.15);
+            color: #fbbf24;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .sandbox-preview {
+            background: #080603;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .sandbox-verdict {
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            margin: 0.5rem 0;
+        }
+
+        .sandbox-verdict.state-safe { color: #10b981; }
+        .sandbox-verdict.state-suspicious { color: #f59e0b; }
+        .sandbox-verdict.state-dangerous { color: #ef4444; }
+
+        /* ===== SECTION 4: IN-BROWSER POPUP SIMULATOR ===== */
+        .mockup-hub-wrap {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 3rem;
+            align-items: center;
+            background: linear-gradient(180deg, #130e08, #090603);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .mockup-hub-wrap { grid-template-columns: 1fr; }
+        }
+
+        .extension-mockup {
+            width: 100%;
+            max-width: 340px;
+            background: #141009;
+            border: 1px solid rgba(193, 127, 36, 0.3);
+            border-top: 3px solid var(--accent);
+            border-radius: 16px;
+            padding: 1.4rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(193, 127, 36, 0.15);
+            margin: 0 auto;
+        }
+
+        .mock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .mock-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .mock-tab-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mock-tab-btn.active {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+        }
+
+        .mock-tab-pane {
+            display: none;
+        }
+
+        .mock-tab-pane.active {
+            display: block;
+        }
+
+        /* ===== SECTION 5: DOMAIN SAFETY AUDIT ===== */
+        .audit-card {
+            background: linear-gradient(180deg, #130f09, #080603);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 2.2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .audit-verdict-badge {
+            display: inline-block;
+            font-size: 1.2rem;
+            font-weight: 900;
+            padding: 4px 14px;
+            border-radius: 6px;
+        }
+
+        .audit-verdict-badge.state-safe { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .audit-verdict-badge.state-suspicious { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .audit-verdict-badge.state-dangerous { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        /* ===== SECTION 6: GOOGLE ECOSYSTEM ===== */
+        .arch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .arch-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.4));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.8rem;
+            transition: transform 0.2s;
+        }
+
+        .arch-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+        }
+
+        .arch-icon {
+            font-size: 2rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .arch-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--highlight);
+            margin-bottom: 0.5rem;
+        }
+
+        .arch-text {
+            font-size: 0.88rem;
+            color: var(--text);
+            line-height: 1.55;
+        }
+
+        /* ===== SECTION 7: INSTALL GUIDE ===== */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .step-card {
+            background: #0d0a06;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.8rem;
+            position: relative;
+        }
+
+        .step-num {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(193, 127, 36, 0.15);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(193, 127, 36, 0.3);
+        }
+
+        .step-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--highlight);
+            margin-bottom: 0.5rem;
+        }
+
+        /* ===== SECTION 8: FAQ ACCORDION ===== */
+        .faq-wrap {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .faq-item {
+            background: #0d0a06;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .faq-q {
+            padding: 1.1rem 1.4rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--highlight);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .faq-a {
+            display: none;
+            padding: 0 1.4rem 1.2rem;
+            font-size: 0.92rem;
+            color: var(--text);
+            line-height: 1.6;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 0.8rem;
+        }
+
+        .faq-item.open .faq-a {
+            display: block;
+        }
+
+        .faq-item.open .faq-icon {
+            transform: rotate(45deg);
+        }
+
+        .faq-icon {
+            transition: transform 0.2s;
+            font-size: 1.2rem;
+            color: var(--accent);
+        }
+
+        /* ===== MODAL & TOAST ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #141009;
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 2.2rem;
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.2rem;
+            right: 1.4rem;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.4rem;
+            cursor: pointer;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #1b160e;
+            border: 1px solid var(--accent);
+            color: #ffffff;
+            padding: 0.8rem 1.4rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            z-index: 3000;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 3.5rem 0;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .footer-logo {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--highlight);
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-tagline {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--highlight);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .github-link:hover {
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
 
 <body>
+    <!-- Background Glowing Ambient Layers -->
     <div class="bg-layer">
-        <div class="grid-bg"></div>
-        <div class="scanlines"></div>
-        <div class="beam"></div>
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-        <!-- Particles -->
-        <div class="particle" style="left: 10%; width: 2px; height: 2px; animation-delay: 0s;"></div>
-        <div class="particle"
-            style="left: 25%; width: 3px; height: 3px; box-shadow: 0 0 8px var(--accent); animation-delay: 2s;"></div>
-        <div class="particle" style="left: 40%; width: 2px; height: 2px; animation-delay: 4s;"></div>
-        <div class="particle"
-            style="left: 55%; width: 3px; height: 3px; box-shadow: 0 0 8px var(--accent); animation-delay: 1s;"></div>
-        <div class="particle" style="left: 70%; width: 2px; height: 2px; animation-delay: 6s;"></div>
-        <div class="particle" style="left: 85%; width: 2px; height: 2px; animation-delay: 3s;"></div>
-        <div class="particle"
-            style="left: 15%; width: 3px; height: 3px; box-shadow: 0 0 8px var(--accent); animation-delay: 5s;"></div>
-        <div class="particle" style="left: 35%; width: 2px; height: 2px; animation-delay: 7s;"></div>
-        <div class="particle" style="left: 65%; width: 2px; height: 2px; animation-delay: 8s;"></div>
-        <div class="particle"
-            style="left: 90%; width: 3px; height: 3px; box-shadow: 0 0 8px var(--accent); animation-delay: 9s;"></div>
-        <div class="particle" style="left: 5%; width: 2px; height: 2px; animation-delay: 2.5s;"></div>
-        <div class="particle"
-            style="left: 50%; width: 3px; height: 3px; box-shadow: 0 0 8px var(--accent); animation-delay: 4.5s;"></div>
-        <div class="particle" style="left: 80%; width: 2px; height: 2px; animation-delay: 6.5s;"></div>
-        <div class="particle" style="left: 20%; width: 2px; height: 2px; animation-delay: 1.5s;"></div>
-        <div class="particle"
-            style="left: 75%; width: 3px; height: 3px; box-shadow: 0 0 8px var(--accent); animation-delay: 3.5s;"></div>
-        <div class="particle" style="left: 30%; width: 2px; height: 2px; animation-delay: 10s;"></div>
-        <div class="particle"
-            style="left: 45%; width: 3px; height: 3px; box-shadow: 0 0 8px var(--accent); animation-delay: 11s;"></div>
-        <div class="particle" style="left: 60%; width: 2px; height: 2px; animation-delay: 12s;"></div>
-        <div class="particle" style="left: 82%; width: 2px; height: 2px; animation-delay: 13s;"></div>
-        <div class="particle"
-            style="left: 95%; width: 3px; height: 3px; box-shadow: 0 0 8px var(--accent); animation-delay: 14s;"></div>
+        <div class="blob-1"></div>
+        <div class="blob-2"></div>
     </div>
 
-    <div id="toast-container"></div>
+    <div id="toast" class="toast"></div>
 
+    <!-- Navigation Bar -->
     <nav>
         <div class="container">
-            <a href="#" class="logo">Scam<span style="color:#ef4444;">Lens</span></a>
-            <div class="nav-links">
-                <a href="#scanner">Live Scanner</a>
-                <a href="./src/pages/dashboard.html" target="_blank" style="color:#c17f24;font-weight:700;">📊 Dashboard App</a>
-                <a href="./src/pages/popup.html" target="_blank">🛡️ Popup UI</a>
-                <a href="./src/pages/report.html" target="_blank">📄 Safety Report</a>
-                <a href="./src/pages/whatif.html" target="_blank">🧪 Risk Sandbox</a>
-                <a href="#install">Install Extension</a>
+            <div class="logo-wrap">
+                <div class="logo-shield-pulse"></div>
+                <a href="#" class="logo">Scam<span style="color:#ef4444;">Lens</span></a>
             </div>
-            <div style="display:flex;align-items:center;gap:1rem;">
-                <button id="theme-toggle" onclick="toggleTheme()"
-                    style="background:none;border:1px solid var(--border);color:var(--highlight);width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:0.3s;"
-                    title="Toggle light/dark mode">🌙</button>
-                <a href="./src/pages/dashboard.html" class="btn-accent" style="padding:0.6rem 1.4rem;">Open Dashboard ↗</a>
+
+            <div class="nav-links">
+                <a href="#scanner">⚡ Live Scanner</a>
+                <a href="#dashboard">📊 Telemetry</a>
+                <a href="#sandbox">🧪 What-If Sandbox</a>
+                <a href="src/pages/pro.html" style="color: #fbbf24; font-weight: 700;">⭐ Pro Systems</a>
+                <a href="#mockup-hub">🛡️ Extension Simulator</a>
+                <a href="#audit">📄 Safety Audit</a>
+                <a href="#install">📦 Download</a>
+            </div>
+
+            <div class="nav-actions">
+                <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle Light/Dark Theme">🌙</button>
+                <button class="btn-accent" onclick="handleDownload()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download Extension
+                </button>
             </div>
         </div>
     </nav>
 
-    <section class="hero" style="position: relative; overflow: hidden;">
-        <!-- Diagonal accent lines -->
-        <div
-            style="position:absolute;width:1px;height:60%;background:linear-gradient(180deg,transparent,rgba(193,127,36,0.15),transparent);transform:rotate(25deg);left:8%;top:20%;z-index:0;pointer-events:none;">
-        </div>
-        <div
-            style="position:absolute;width:1px;height:60%;background:linear-gradient(180deg,transparent,rgba(193,127,36,0.15),transparent);transform:rotate(25deg);left:50%;top:15%;z-index:0;pointer-events:none;">
-        </div>
-        <div
-            style="position:absolute;width:1px;height:60%;background:linear-gradient(180deg,transparent,rgba(193,127,36,0.15),transparent);transform:rotate(25deg);right:8%;top:20%;z-index:0;pointer-events:none;">
-        </div>
-        <!-- Orb behind mockup -->
-        <div
-            style="position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(193,127,36,0.12),transparent 70%);filter:blur(80px);right:-100px;top:50%;transform:translateY(-50%);z-index:0;pointer-events:none;">
-        </div>
-        <div class="hero-rings">
-            <div class="ring ring-1"></div>
-            <div class="ring ring-2"></div>
-        </div>
+    <!-- ===== SECTION 1: HERO & LIVE COMMAND CENTER SCANNER ===== -->
+    <section class="hero-section" id="scanner">
         <div class="container">
-            <div class="hero-grid">
-                <div>
-                    <div class="hero-badge">RULES DECIDE. AI EXPLAINS.</div>
-                    <h1>Stop Scams Before <span>They Strike</span></h1>
-                    <p>ScamLens inspects deceptive links and form targets in real-time. Deterministic rules decide verdicts; Google Gemini translates technical security signals into empathetic, plain-language advice.</p>
-                    <div class="hero-stats">
-                        <div class="stat-pill">🛡️ 11-Signal Risk Engine</div>
-                        <div class="stat-pill">✨ Google Gemini Flash Explainer</div>
-                        <div class="stat-pill">⚡ 100% Offline First</div>
-                        <div class="stat-pill">🔒 Tracker & Fingerprint Shield</div>
-                    </div>
-                    <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
-                        <a href="./src/pages/dashboard.html" target="_blank" class="btn-accent" style="display:inline-block;text-align:center;">📊 Open Dashboard App</a>
-                        <a href="#scanner" class="btn-accent" style="display:inline-block;text-align:center;background:rgba(193, 127, 36, 0.2);border:1px solid var(--accent);">Test Live Scanner ↓</a>
-                        <a href="./src/pages/popup.html" target="_blank" class="btn-accent" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--highlight);">🛡️ Popup UI</a>
-                    </div>
+            <div class="hero-headline-wrap">
+                <div class="hero-badge">
+                    <span>🛡️</span> RULES DECIDE. AI EXPLAINS.
                 </div>
-                <div class="mockup-wrap">
-                    <div class="extension-mockup">
-                        <div class="popup-header">
-                            <div class="popup-logo">Scam<span style="color:#ef4444;">Lens</span></div>
-                            <div class="popup-status">ACTIVE</div>
-                        </div>
-                        <div class="popup-stat">
-                            <span class="stat-label">Current Tab Verdict</span>
-                            <span class="stat-val" style="color:#10b981;font-size:1.5rem;">SAFE (0/100)</span>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width:100%;background:#10b981;"></div>
-                            </div>
-                        </div>
-                        <div class="popup-info-row">
-                            <span>Signals Evaluated:</span>
-                            <span style="color:white;font-weight:700;">11/11 Local Rules</span>
-                        </div>
-                        <div class="risk-badges">
-                            <div class="r-badge r-safe" style="border:2px solid #10b981;font-weight:900;">SAFE</div>
-                            <div class="r-badge r-mod" style="opacity:0.4;">SUSPICIOUS</div>
-                            <div class="r-badge r-dan" style="opacity:0.4;">DANGEROUS</div>
-                        </div>
-                        <div class="popup-footer">
-                            <div class="pulse-dot"></div>
-                            SHIELD & TRACKER PROTECTION ON
-                        </div>
-                    </div>
+                <h1 class="hero-title">
+                    Real-Time Link Threat Detection <span>Before You Click</span>
+                </h1>
+                <p class="hero-desc">
+                    ScamLens inspects deceptive links, homoglyph look-alikes, and credential theft forms in under 5 milliseconds. 
+                    Deterministic rules score risks; Google Gemini Flash translates technical evidence into plain, friendly advice.
+                </p>
+                <div class="hero-pills">
+                    <span class="hero-pill">⚡ 11 Local Deterministic Signals</span>
+                    <span class="hero-pill">✨ Google Gemini Flash Explainer</span>
+                    <span class="hero-pill">🔒 Zero-Tracking Privacy by Design</span>
+                    <span class="hero-pill">🛡️ DeclarativeNetRequest Ad Shield</span>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- ===== INTERACTIVE LIVE SCAMLENS SCANNER ===== -->
-    <section class="scanner-section" id="scanner">
-        <div class="container">
+            <!-- Live Interactive URL Scanner -->
             <div class="scanner-card">
-                <div class="scanner-header-tag">Live Engine Playground</div>
-                <h2 class="scanner-title">Scan Any Link Instantly</h2>
-                <p class="scanner-subtitle">
-                    Type or paste any URL below to see the deterministic rules engine and Gemini AI explainer in action.
-                    Works 100% offline with zero setup required.
-                </p>
-
                 <div class="scanner-input-wrap">
-                    <input type="text" id="scanner-url-input" class="scanner-input" placeholder="Paste any link (e.g., http://login.micros0ft-verify.com/account/login)" aria-label="URL to scan">
-                    <button type="button" id="scanner-btn" class="btn-accent">Scan Link ⚡</button>
+                    <input type="text" id="scanner-url-input" class="scanner-input" placeholder="Type or paste any URL (e.g. http://login.micros0ft-verify.com/account/login)" aria-label="Target URL to inspect" />
+                    <button type="button" id="scanner-btn" class="btn-accent">
+                        Scan Link ⚡
+                    </button>
                 </div>
 
                 <div class="presets-label">Quick Test Scenarios for Evaluators:</div>
@@ -1736,8 +1221,8 @@
                     <!-- Populated by web-scanner.js -->
                 </div>
 
-                <!-- Live Results Display Card -->
-                <div id="scanner-results" class="scanner-results-card state-dangerous" style="display: block;">
+                <!-- Live Results Card -->
+                <div id="scanner-results" class="scanner-results-card state-dangerous">
                     <div class="res-top">
                         <div class="verdict-tag" id="scanner-verdict">DANGEROUS</div>
                         <div class="score-pill-res">Threat Score: <span id="scanner-score">85/100</span></div>
@@ -1750,7 +1235,7 @@
                     <div class="source-pill source-rules" id="scanner-source">🛡️ Deterministic Rules Engine</div>
 
                     <div class="explanation-res" id="scanner-explanation">
-                        Domain mimics known brand "Microsoft", high-risk top level domain, and credential form targets external host.
+                        Domain mimics known brand "Microsoft", high-risk top-level domain, and credential form targets external host.
                     </div>
 
                     <div class="sec-sub-title">Detected Signals Breakdown:</div>
@@ -1776,35 +1261,156 @@
 
     <div class="divider"></div>
 
-    <section id="about" style="padding: 100px 0;">
+    <!-- ===== SECTION 2: TELEMETRY & VISUAL CHARTS DASHBOARD ===== -->
+    <section class="section-padding" id="dashboard">
         <div class="container">
-            <div class="section-label">The Problem</div>
-            <h2 class="section-title">The Hidden Web of Surveillance</h2>
-            <div class="carousel-container">
-                <div class="carousel-track" id="aboutTrack">
-                    <div class="card">
-                        <div class="card-icon">🍪</div>
-                        <div class="card-title">Cookie Harvesting</div>
-                        <div class="card-text">Websites deploy hundreds of hidden cookies to build a permanent profile
-                            of your browsing behavior.</div>
+            <div class="section-header">
+                <span class="section-tag">Real-Time Protection</span>
+                <h2 class="section-title">Live Security Telemetry &amp; Insights</h2>
+                <p class="section-desc">
+                    ScamLens monitors web traffic with sub-5ms heuristic evaluation and automatic tracker neutralization.
+                </p>
+            </div>
+
+            <div class="telemetry-grid">
+                <div class="tele-card">
+                    <div class="tele-label">Links Inspected</div>
+                    <div class="tele-val">24,519</div>
+                    <div class="tele-sub">✓ 100% evaluated in &lt;5ms</div>
+                </div>
+                <div class="tele-card">
+                    <div class="tele-label">Phishing Blocked</div>
+                    <div class="tele-val" style="color:#ef4444;">129</div>
+                    <div class="tele-sub" style="color:#f87171;">🚨 Zero credentials compromised</div>
+                </div>
+                <div class="tele-card">
+                    <div class="tele-label">Suspicious Links Caught</div>
+                    <div class="tele-val" style="color:#f59e0b;">842</div>
+                    <div class="tele-sub" style="color:#fbbf24;">⚠️ Deceptive TLDs &amp; Look-alikes</div>
+                </div>
+                <div class="tele-card">
+                    <div class="tele-label">Trackers Neutralized</div>
+                    <div class="tele-val" style="color:#38bdf8;">14,891</div>
+                    <div class="tele-sub">🛡️ DeclarativeNetRequest Active</div>
+                </div>
+            </div>
+
+            <!-- Two Visual Chart.js Canvases -->
+            <div class="charts-grid">
+                <div class="chart-box">
+                    <div class="chart-box-title">Threat Vector Distribution</div>
+                    <div class="chart-box-sub">Breakdown of blocked threat categories across 24,519 links</div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="chart-threat-vectors"></canvas>
                     </div>
-                    <div class="card">
-                        <div class="card-icon">👁</div>
-                        <div class="card-title">Stealth Tracking</div>
-                        <div class="card-text">Third-party scripts from ad networks follow you across sites, even when
-                            you aren't logged in.</div>
+                </div>
+
+                <div class="chart-box">
+                    <div class="chart-box-title">7-Day Threat Activity</div>
+                    <div class="chart-box-sub">Daily count of high-risk phishing and deceptive intercepts</div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="chart-weekly-activity"></canvas>
                     </div>
-                    <div class="card">
-                        <div class="card-icon">👤</div>
-                        <div class="card-title">Digital Fingerprinting</div>
-                        <div class="card-text">Sites use your hardware and browser settings to create a unique ID that
-                            can't be deleted.</div>
+                </div>
+            </div>
+
+            <!-- Live Tracker Interceptor Benchmark -->
+            <div class="sim-box">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+                    <div>
+                        <div style="font-weight:800;color:#ffffff;font-size:1.05rem;">Live Tracker Interceptor Benchmark</div>
+                        <div style="color:var(--muted);font-size:0.84rem;">Simulate real third-party ad networks attempting to load tracking scripts:</div>
                     </div>
-                    <div class="card">
-                        <div class="card-icon">📈</div>
-                        <div class="card-title">Data Exploitation</div>
-                        <div class="card-text">Your personal habits are sold to brokers without your consent to power
-                            targeted advertising.</div>
+                    <button type="button" id="btn-sim-tracker" class="btn-accent" style="padding:0.6rem 1.3rem;font-size:0.85rem;">
+                        Run Tracker Interception 📡
+                    </button>
+                </div>
+                <div id="tracker-sim-log" class="sim-log">
+                    <div style="color:#64748b;font-style:italic;">Click "Run Tracker Interception" to verify DeclarativeNetRequest domain blocking in action...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ===== SECTION 3: WHAT-IF THREAT SANDBOX ===== -->
+    <section class="section-padding" id="sandbox">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Interactive Laboratory</span>
+                <h2 class="section-title">What-If Threat Sandbox</h2>
+                <p class="section-desc">
+                    Toggle attack vectors on and off to observe how ScamLens computes risk scores and triggers verdicts in real time.
+                </p>
+            </div>
+
+            <div class="sandbox-wrap">
+                <div>
+                    <div style="font-size:0.8rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem;">
+                        Toggle Attack Vectors:
+                    </div>
+                    <div class="sandbox-toggles">
+                        <label class="sandbox-toggle-row">
+                            <div class="toggle-left">
+                                <input type="checkbox" class="sandbox-toggle" data-points="35" data-label="Brand Look-Alike Domain" checked />
+                                <span class="toggle-text">Brand Look-alike Typo ("micros0ft", "paypa1")</span>
+                            </div>
+                            <span class="toggle-pts">+35 pts</span>
+                        </label>
+                        <label class="sandbox-toggle-row">
+                            <div class="toggle-left">
+                                <input type="checkbox" class="sandbox-toggle" data-points="10" data-label="Suspicious Abused TLD (.xyz, .buzz)" checked />
+                                <span class="toggle-text">High-Risk Disposable TLD (.xyz, .buzz, .top)</span>
+                            </div>
+                            <span class="toggle-pts">+10 pts</span>
+                        </label>
+                        <label class="sandbox-toggle-row">
+                            <div class="toggle-left">
+                                <input type="checkbox" class="sandbox-toggle" data-points="30" data-hard="true" data-label="Cross-Domain Password Form" checked />
+                                <span class="toggle-text">Password/OTP Form Posting to External Domain</span>
+                            </div>
+                            <span class="toggle-pts" style="color:#ef4444;background:rgba(239,68,68,0.15);">+30 pts (Hard Threat)</span>
+                        </label>
+                        <label class="sandbox-toggle-row">
+                            <div class="toggle-left">
+                                <input type="checkbox" class="sandbox-toggle" data-points="10" data-label="High-Urgency Wording" />
+                                <span class="toggle-text">Urgency Pressure Text ("Account Suspended in 24h")</span>
+                            </div>
+                            <span class="toggle-pts">+10 pts</span>
+                        </label>
+                        <label class="sandbox-toggle-row">
+                            <div class="toggle-left">
+                                <input type="checkbox" class="sandbox-toggle" data-points="15" data-label="Unencrypted Connection (HTTP)" />
+                                <span class="toggle-text">Insecure Connection (Unencrypted HTTP)</span>
+                            </div>
+                            <span class="toggle-pts">+15 pts</span>
+                        </label>
+                        <label class="sandbox-toggle-row">
+                            <div class="toggle-left">
+                                <input type="checkbox" class="sandbox-toggle" data-points="25" data-label="Punycode / IDN Homoglyph" />
+                                <span class="toggle-text">Punycode / IDN Homoglyph Spoof (Unicode deception)</span>
+                            </div>
+                            <span class="toggle-pts">+25 pts</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="sandbox-preview">
+                    <div style="font-size:0.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">
+                        Calculated Verdict
+                    </div>
+                    <div id="sandbox-verdict" class="sandbox-verdict state-dangerous">DANGEROUS</div>
+                    <div style="font-size:1.3rem;font-weight:800;color:#ffffff;margin-bottom:1rem;">
+                        Score: <span id="sandbox-score">75/100</span>
+                    </div>
+
+                    <div class="score-bar-track" style="margin-bottom:1.5rem;">
+                        <div id="sandbox-bar" class="score-bar-fill" style="width: 75%; background: #ef4444;"></div>
+                    </div>
+
+                    <div id="sandbox-advice" style="font-size:0.85rem;color:#fca5a5;line-height:1.5;background:rgba(239,68,68,0.1);padding:14px;border-radius:10px;border:1px solid rgba(239,68,68,0.25);">
+                        CRITICAL PHISHING RISK: The combined signals trigger high-probability credential theft indicators. Browsers should block access immediately.
                     </div>
                 </div>
             </div>
@@ -1813,35 +1419,117 @@
 
     <div class="divider"></div>
 
-    <section id="features" style="padding: 100px 0;">
+    <!-- ===== SECTION 4: IN-BROWSER EXTENSION SIMULATOR ===== -->
+    <section class="section-padding" id="mockup-hub">
         <div class="container">
-            <div class="section-label">Solution</div>
-            <h2 class="section-title">Powerful Privacy, Zero Effort</h2>
-            <div class="carousel-container">
-                <div class="carousel-track" id="featureTrack">
-                    <div class="card">
-                        <div class="card-icon">🛡</div>
-                        <div class="card-title">Shadow Shield</div>
-                        <div class="card-text">Real-time firewall that blocks known trackers and suspicious network
-                            requests before they load.</div>
+            <div class="section-header">
+                <span class="section-tag">Interactive Extension Simulator</span>
+                <h2 class="section-title">Experience the Chrome Popup UI Live</h2>
+                <p class="section-desc">
+                    Test the exact ScamLens browser extension interface right inside your browser with full tab switching and controls.
+                </p>
+            </div>
+
+            <div class="mockup-hub-wrap">
+                <div>
+                    <h3 style="font-size:1.6rem;font-weight:800;color:var(--highlight);margin-bottom:1rem;">
+                        Always Active. Never In The Way.
+                    </h3>
+                    <p style="color:var(--text);font-size:1rem;margin-bottom:1.5rem;line-height:1.6;">
+                        The ScamLens extension sits discreetly in your Chrome toolbar. It shows a color-coded badge icon (Green for Safe, Amber for Suspicious, Red for Dangerous) and displays human-readable security breakdowns whenever clicked.
+                    </p>
+
+                    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:2rem;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:1.2rem;">🛡️</span>
+                            <div>
+                                <strong style="color:var(--highlight);">Active Heuristic Shield:</strong>
+                                <span style="font-size:0.9rem;color:var(--text);"> Instant checks on every link you hover over.</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:1.2rem;">✨</span>
+                            <div>
+                                <strong style="color:var(--highlight);">Plain-English Explanations:</strong>
+                                <span style="font-size:0.9rem;color:var(--text);"> No cryptic security jargon. Clear advice tailored for everyone.</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:1.2rem;">🔒</span>
+                            <div>
+                                <strong style="color:var(--highlight);">Privacy Preservation:</strong>
+                                <span style="font-size:0.9rem;color:var(--text);"> Zero browsing history or credentials stored or transmitted.</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card">
-                        <div class="card-icon">📊</div>
-                        <div class="card-title">Privacy Score</div>
-                        <div class="card-text">Instant risk analysis for every site you visit. Know exactly how much
-                            data is being requested.</div>
+
+                    <button class="btn-accent" onclick="handleDownload()">
+                        Download Extension Package (.zip) ⬇
+                    </button>
+                </div>
+
+                <!-- Live In-Browser Popup Mockup -->
+                <div class="extension-mockup">
+                    <div class="mock-header">
+                        <div style="font-weight:900;color:#ffffff;font-size:1rem;">Scam<span style="color:#ef4444;">Lens</span></div>
+                        <div id="mock-status-text" style="font-size:0.7rem;font-weight:800;color:#10b981;border:1px solid rgba(16,185,129,0.3);padding:2px 8px;border-radius:4px;">ACTIVE</div>
                     </div>
-                    <div class="card">
-                        <div class="card-icon">🧼</div>
-                        <div class="card-title">Auto-Cleanup</div>
-                        <div class="card-text">Automatically purges tracking cookies and local storage when you leave a
-                            website.</div>
+
+                    <div class="mock-tabs">
+                        <button type="button" class="mock-tab-btn active" data-tab="shield">Shield</button>
+                        <button type="button" class="mock-tab-btn" data-tab="gemini">AI Explainer</button>
+                        <button type="button" class="mock-tab-btn" data-tab="settings">Settings</button>
                     </div>
-                    <div class="card">
-                        <div class="card-icon">🤖</div>
-                        <div class="card-title">AI Insights</div>
-                        <div class="card-text">Advanced heuristics to identify new tracking patterns before they are
-                            added to global lists.</div>
+
+                    <!-- Tab: Shield -->
+                    <div class="mock-tab-pane active" id="mock-pane-shield">
+                        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px;">Inspecting Tab:</div>
+                        <div id="mock-domain" style="font-size:0.88rem;color:#ffffff;font-weight:700;word-break:break-all;margin-bottom:12px;">
+                            micros0ft-verify.com
+                        </div>
+
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <span id="mock-verdict" style="font-size:1.2rem;font-weight:900;color:#ef4444;">DANGEROUS</span>
+                            <span id="mock-score" style="font-size:0.85rem;font-weight:800;color:#ffffff;">85/100</span>
+                        </div>
+
+                        <div class="score-bar-track" style="margin-bottom:12px;height:5px;">
+                            <div id="mock-fill" class="score-bar-fill" style="width:85%;background:#ef4444;"></div>
+                        </div>
+
+                        <div id="mock-advice" style="font-size:0.8rem;color:#fca5a5;background:rgba(239,68,68,0.12);padding:10px;border-radius:6px;line-height:1.4;">
+                            Domain mimics known brand "Microsoft", high-risk top-level domain, and credential form targets external host.
+                        </div>
+                    </div>
+
+                    <!-- Tab: Gemini AI -->
+                    <div class="mock-tab-pane" id="mock-pane-gemini">
+                        <div style="font-size:0.75rem;color:#c4b5fd;font-weight:700;margin-bottom:6px;">✨ Google Gemini Flash</div>
+                        <div style="font-size:0.8rem;color:#e2e8f0;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);padding:10px;border-radius:6px;line-height:1.45;">
+                            "This website is pretending to be Microsoft to steal your password. Do not type your email or password here. Close this tab immediately."
+                        </div>
+                    </div>
+
+                    <!-- Tab: Settings -->
+                    <div class="mock-tab-pane" id="mock-pane-settings">
+                        <div style="display:flex;flex-direction:column;gap:10px;font-size:0.82rem;color:#ffffff;">
+                            <label style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+                                <span>Shield Protection</span>
+                                <input type="checkbox" id="mock-toggle-shield" checked />
+                            </label>
+                            <label style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+                                <span>Tracker Blocker (DNR)</span>
+                                <input type="checkbox" id="mock-toggle-trackers" checked />
+                            </label>
+                            <label style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+                                <span>Top 10K Allowlist Fast-Path</span>
+                                <input type="checkbox" checked />
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.7rem;color:var(--muted);text-align:center;">
+                        ScamLens v1.0.0 • Manifest V3
                     </div>
                 </div>
             </div>
@@ -1850,322 +1538,259 @@
 
     <div class="divider"></div>
 
-    <section id="how" class="how-it-works">
+    <!-- ===== SECTION 5: INSTANT DOMAIN SAFETY AUDIT ===== -->
+    <section class="section-padding" id="audit">
         <div class="container">
-            <div class="section-label">Workflow</div>
-            <h2 class="section-title">Three Steps to Safety</h2>
+            <div class="section-header">
+                <span class="section-tag">Domain Security Audit</span>
+                <h2 class="section-title">Instant Domain Safety Report</h2>
+                <p class="section-desc">
+                    Enter any website domain to generate a complete plain-language cybersecurity audit with SSL verification and risk scoring.
+                </p>
+            </div>
+
+            <div class="audit-card">
+                <div class="scanner-input-wrap">
+                    <input type="text" id="audit-domain-input" class="scanner-input" placeholder="Enter domain (e.g. chase-verify-login.xyz or github.com)" />
+                    <button type="button" id="audit-domain-btn" class="btn-accent">
+                        Generate Audit Report 📄
+                    </button>
+                </div>
+
+                <div id="audit-report-card" style="display:none;margin-top:1.5rem;background:#090704;border:1px solid var(--border);border-radius:12px;padding:1.8rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.2rem;">
+                        <div>
+                            <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;font-weight:700;">Audited Target</div>
+                            <div id="audit-res-domain" style="font-size:1.4rem;font-weight:900;color:#ffffff;">example.com</div>
+                        </div>
+                        <div id="audit-res-verdict" class="audit-verdict-badge state-safe">SAFE</div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:1rem;margin-bottom:1.2rem;">
+                        <div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:8px;">
+                            <div style="font-size:0.75rem;color:var(--muted);">Risk Score:</div>
+                            <div id="audit-res-score" style="font-size:1.1rem;font-weight:800;color:#ffffff;">0/100</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:8px;">
+                            <div style="font-size:0.75rem;color:var(--muted);">Transport Security:</div>
+                            <div id="audit-res-tls" style="font-size:1rem;font-weight:800;color:#10b981;">VALID SSL / TLS</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-radius:8px;">
+                            <div style="font-size:0.75rem;color:var(--muted);">DNS Hygiene:</div>
+                            <div id="audit-res-dns" style="font-size:1rem;font-weight:800;color:#38bdf8;">Google Public DNS Verified</div>
+                        </div>
+                    </div>
+
+                    <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:6px;">Summary Analysis:</div>
+                    <div id="audit-res-summary" style="font-size:0.95rem;color:#f1f5f9;line-height:1.55;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
+                        No malicious characteristics detected.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ===== SECTION 6: GOOGLE ECOSYSTEM ARCHITECTURE ===== -->
+    <section class="section-padding" id="architecture">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Google Ecosystem</span>
+                <h2 class="section-title">Built with Authentic Google Technologies</h2>
+                <p class="section-desc">
+                    ScamLens leverages native Google Cloud and developer tools for zero paid dependencies, total data privacy, and sub-second performance.
+                </p>
+            </div>
+
+            <div class="arch-grid">
+                <div class="arch-card">
+                    <div class="arch-icon">🤖</div>
+                    <h3 class="arch-title">Google Gemini Flash</h3>
+                    <p class="arch-text">
+                        Free Google AI Studio key. Strict rule: Gemini never invents scores or verdicts—it solely rewrites technical threat signals into empathetic, plain-English advice.
+                    </p>
+                </div>
+                <div class="arch-card">
+                    <div class="arch-icon">☁️</div>
+                    <h3 class="arch-title">Google Apps Script</h3>
+                    <p class="arch-text">
+                        Zero-cost serverless backend Web App. Executes token validation, Safe Browsing lookups, and response caching via Google CacheService with zero credit cards.
+                    </p>
+                </div>
+                <div class="arch-card">
+                    <div class="arch-icon">🌐</div>
+                    <h3 class="arch-title">Google Public DNS</h3>
+                    <p class="arch-text">
+                        Authoritative DNS over HTTPS (DoH) querying at <code>dns.google</code>. Checks MX and SPF record hygiene on look-alike domains without third-party dependencies.
+                    </p>
+                </div>
+                <div class="arch-card">
+                    <div class="arch-icon">⚡</div>
+                    <h3 class="arch-title">Google Antigravity</h3>
+                    <p class="arch-text">
+                        Developed natively in Google Antigravity IDE with pairs of automated unit tests, clean Chrome Manifest V3 service workers, and DeclarativeNetRequest rules.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ===== SECTION 7: GET EXTENSION & 3-STEP SETUP ===== -->
+    <section class="section-padding" id="install">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Browser Protection</span>
+                <h2 class="section-title">Get the ScamLens Chrome Extension</h2>
+                <p class="section-desc">
+                    Protect every tab automatically in real-time. Install ScamLens in Chrome in 3 simple steps:
+                </p>
+            </div>
+
             <div class="steps-grid">
                 <div class="step-card">
                     <div class="step-num">1</div>
-                    <h3 class="step-title">Install</h3>
-                    <p>Add DataShadow to your Chrome browser in seconds. No account required.</p>
+                    <h3 class="step-title">Download Package</h3>
+                    <p style="font-size:0.9rem;color:var(--text);">Download <code>scamlens-extension.zip</code> and extract the contents to your computer.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-num">2</div>
-                    <h3 class="step-title">Browse</h3>
-                    <p>Continue using the web as you normally would. DataShadow works in the background.</p>
+                    <h3 class="step-title">Enable Developer Mode</h3>
+                    <p style="font-size:0.9rem;color:var(--text);">Open <code>chrome://extensions</code> in Chrome and switch on <strong>Developer mode</strong> in the top-right corner.</p>
                 </div>
                 <div class="step-card">
                     <div class="step-num">3</div>
-                    <h3 class="step-title">Control</h3>
-                    <p>Examine blocked trackers via the popup and customize your protection levels.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <section id="install">
-        <div class="container">
-            <div class="section-label">Setup</div>
-            <h2 class="section-title">Download &amp; Install</h2>
-
-            <div class="install-cta-wrap">
-                <button class="btn-accent" onclick="handleDownload()" style="font-size:1.05rem;padding:1rem 2.5rem;">Get
-                    DataShadow</button>
-                <p style="color:var(--muted);font-size:0.85rem;margin-top:1rem;">Clicking downloads the extension ZIP
-                    automatically</p>
-            </div>
-
-            <div class="install-progress">
-                <div class="prog-step">
-                    <div class="pnum">1</div>&nbsp;Download
-                </div>
-                <div class="prog-line"></div>
-                <div class="prog-step">
-                    <div class="pnum">2</div>&nbsp;Extract
-                </div>
-                <div class="prog-line"></div>
-                <div class="prog-step">
-                    <div class="pnum">3</div>&nbsp;Load in Chrome
-                </div>
-                <div class="prog-line"></div>
-                <div class="prog-step">
-                    <div class="pnum">4</div>&nbsp;Done
+                    <h3 class="step-title">Load Unpacked</h3>
+                    <p style="font-size:0.9rem;color:var(--text);">Click <strong>Load unpacked</strong> and select the extracted extension folder. ScamLens is now live in your toolbar!</p>
                 </div>
             </div>
 
-            <div class="install-steps">
-                <div class="istep">
-                    <div class="istep-num">1</div>
-                    <div class="istep-text">Click the button above — the extension ZIP will download automatically.
-                    </div>
-                </div>
-                <div class="istep">
-                    <div class="istep-num">2</div>
-                    <div class="istep-text">Extract the downloaded ZIP folder anywhere on your computer you'll remember.
-                    </div>
-                </div>
-                <div class="istep">
-                    <div class="istep-num">3</div>
-                    <div class="istep-text">Open Chrome and navigate to <code>chrome://extensions/</code></div>
-                </div>
-                <div class="istep">
-                    <div class="istep-num">4</div>
-                    <div class="istep-text">Enable <strong style="color:#f0eeff;">Developer Mode</strong> using the
-                        toggle in the top-right corner.</div>
-                </div>
-                <div class="istep">
-                    <div class="istep-num">5</div>
-                    <div class="istep-text">Click <strong style="color:#f0eeff;">&ldquo;Load Unpacked&rdquo;</strong>
-                        and select the extracted extension folder.</div>
-                </div>
-                <div class="istep">
-                    <div class="istep-num">6</div>
-                    <div class="istep-text">The DataShadow shield icon appears in your toolbar — you are protected.
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion">
-                <button class="accordion-toggle" onclick="toggleAccordion(this)">
-                    Setting up the website too?
-                    <span class="chevron">&#9660;</span>
+            <div style="text-align:center;margin-top:2.5rem;display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;">
+                <button class="btn-accent" onclick="handleDownload()" style="font-size:1rem;padding:0.85rem 2.2rem;">
+                    Download Extension Package (.zip) ⬇
                 </button>
-                <div class="accordion-body">
-                    <div class="istep" style="margin-top:0.8rem;">
-                        <div class="istep-num">1</div>
-                        <div class="istep-text">Extract the website ZIP folder to your preferred location.</div>
-                    </div>
-                    <div class="istep">
-                        <div class="istep-num">2</div>
-                        <div class="istep-text">Open a terminal inside that extracted folder.</div>
-                    </div>
-                    <div class="istep">
-                        <div class="istep-num">3</div>
-                        <div class="istep-text">Run <code>npm install</code> to install all dependencies.</div>
-                    </div>
-                    <div class="istep">
-                        <div class="istep-num">4</div>
-                        <div class="istep-text">Run <code>npm run dev</code> to start the development server.</div>
-                    </div>
-                    <div class="istep">
-                        <div class="istep-num">5</div>
-                        <div class="istep-text">Open <code>localhost:5173</code> in your browser — the dashboard is
-                            live.</div>
-                    </div>
-                </div>
+                <button class="btn-secondary" onclick="openInstallModal()" style="font-size:1rem;padding:0.85rem 1.8rem;">
+                    Step-by-Step Guide Modal 📖
+                </button>
             </div>
         </div>
     </section>
 
     <div class="divider"></div>
 
-    <!-- ===== FAQ SECTION ===== -->
-    <section id="faq" style="padding: 10rem 0;">
+    <!-- ===== SECTION 8: FAQ ===== -->
+    <section class="section-padding" id="faq">
         <div class="container">
-            <div class="section-label">FAQ</div>
-            <h2 class="section-title">Got Questions?</h2>
-            <div style="max-width:800px;margin:0 auto;" id="faq-list">
+            <div class="section-header">
+                <span class="section-tag">FAQ</span>
+                <h2 class="section-title">Frequently Asked Questions</h2>
+            </div>
 
+            <div class="faq-wrap">
                 <div class="faq-item">
-                    <div class="faq-q" onclick="toggleFaq(this)">Is DataShadow completely free? <span
-                            class="faq-icon">+</span></div>
-                    <div class="faq-a">Yes — DataShadow is 100% free and open source. No subscriptions, no hidden fees,
-                        no premium tier. Ever.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-q" onclick="toggleFaq(this)">Does DataShadow send my data to any server? <span
-                            class="faq-icon">+</span></div>
-                    <div class="faq-a">Never. All analysis happens locally inside your browser. We have zero access to
-                        your browsing data — it never leaves your device.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-q" onclick="toggleFaq(this)">Will it slow down my browser? <span
-                            class="faq-icon">+</span></div>
-                    <div class="faq-a">No. DataShadow is built for performance. It runs as a lightweight background
-                        process with zero impact on page load speed.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-q" onclick="toggleFaq(this)">Does it work on all websites? <span
-                            class="faq-icon">+</span></div>
-                    <div class="faq-a">Yes. DataShadow works on every website you visit automatically — no configuration
-                        needed.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-q" onclick="toggleFaq(this)">Do I need to create an account? <span
-                            class="faq-icon">+</span></div>
-                    <div class="faq-a">No account, no sign-up, no email required. Install and it works instantly.</div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-q" onclick="toggleFaq(this)">Is it safe to install extensions in Developer Mode?
-                        <span class="faq-icon">+</span>
+                    <div class="faq-q" onclick="toggleFaq(this)">What does "Rules decide. AI explains." mean? <span class="faq-icon">+</span></div>
+                    <div class="faq-a">
+                        Verdicts (Safe, Suspicious, Dangerous) and risk scores (0–100) are determined 100% deterministically by local heuristic rules and verified lookups. Gemini is never permitted to invent risk scores or decide verdicts—it is used exclusively to translate cryptic cybersecurity evidence into plain, friendly language for everyday users.
                     </div>
-                    <div class="faq-a">Yes — Developer Mode just means the extension isn't on the Chrome Web Store yet.
-                        The code is fully open source and auditable on our GitHub.</div>
                 </div>
 
                 <div class="faq-item">
-                    <div class="faq-q" onclick="toggleFaq(this)">What browsers does DataShadow support? <span
-                            class="faq-icon">+</span></div>
-                    <div class="faq-a">Currently Chrome, Brave, and Edge — any Chromium-based browser supports it.</div>
+                    <div class="faq-q" onclick="toggleFaq(this)">Does ScamLens work completely offline? <span class="faq-icon">+</span></div>
+                    <div class="faq-a">
+                        Yes! All core signals (Levenshtein brand typos, Punycode IDN homographs, raw IP hosts, suspicious TLDs, and cross-domain forms) evaluate locally in under 5 milliseconds with zero network required. Offline template guidance activates automatically if internet access is unavailable.
+                    </div>
                 </div>
 
+                <div class="faq-item">
+                    <div class="faq-q" onclick="toggleFaq(this)">Does ScamLens track or send my browsing data? <span class="faq-icon">+</span></div>
+                    <div class="faq-a">
+                        No. ScamLens is built with privacy-by-design. Only target hostnames are queried during optional deep checks, and full URLs are never stored or logged on remote servers. Zero personal credentials or cookies ever leave your device.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-q" onclick="toggleFaq(this)">Are any paid APIs or credit cards required? <span class="faq-icon">+</span></div>
+                    <div class="faq-a">
+                        None! ScamLens runs exclusively on free developer tiers: Google AI Studio (Gemini Flash), Google Apps Script Web App, and Google Public DNS over HTTPS.
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <div class="divider"></div>
-
+    <!-- ===== FOOTER ===== -->
     <footer>
         <div class="container">
-            <div class="footer-logo">DataShadow</div>
-            <p class="footer-tagline">Exposing the hidden web. Protecting your digital life.</p>
-            <a href="https://github.com" class="github-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.042-1.416-4.042-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+            <div class="footer-logo">Scam<span style="color:#ef4444;">Lens</span></div>
+            <p class="footer-tagline">Rules decide. AI explains. AI-powered cybersecurity &amp; digital safety.</p>
+            <a href="https://github.com/samyuktaap/shadow-" class="github-link" target="_blank" rel="noopener">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.042-1.416-4.042-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                 </svg>
-                View on GitHub
+                View Codebase on GitHub
             </a>
         </div>
     </footer>
 
+    <!-- ===== STEP-BY-STEP INSTALL MODAL ===== -->
+    <div class="modal-overlay" id="installModal" onclick="if(event.target===this)closeInstallModal()">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeInstallModal()">✕</button>
+            <h3 style="font-size:1.4rem;font-weight:900;color:#ffffff;margin-bottom:0.5rem;">
+                📦 Install ScamLens in Chrome
+            </h3>
+            <p style="font-size:0.9rem;color:var(--text);margin-bottom:1.5rem;">
+                Follow these 3 quick steps to load ScamLens as an unpacked Chrome extension:
+            </p>
+
+            <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:2rem;">
+                <div style="background:rgba(255,255,255,0.03);padding:14px;border-radius:10px;border:1px solid var(--border);">
+                    <strong style="color:var(--accent);">Step 1: Download &amp; Extract</strong>
+                    <p style="font-size:0.85rem;color:#cbd5e1;margin-top:4px;">
+                        Download <code>scamlens-extension.zip</code>. Right-click it and choose <strong>"Extract All"</strong> to your Desktop or Downloads folder.
+                    </p>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:14px;border-radius:10px;border:1px solid var(--border);">
+                    <strong style="color:var(--accent);">Step 2: Open Extensions in Chrome</strong>
+                    <p style="font-size:0.85rem;color:#cbd5e1;margin-top:4px;">
+                        Open Chrome and navigate to <code>chrome://extensions</code>. Toggle the <strong>Developer mode</strong> switch in the upper-right corner.
+                    </p>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:14px;border-radius:10px;border:1px solid var(--border);">
+                    <strong style="color:var(--accent);">Step 3: Load Unpacked Folder</strong>
+                    <p style="font-size:0.85rem;color:#cbd5e1;margin-top:4px;">
+                        Click <strong>"Load unpacked"</strong> in the upper-left corner. Select the extracted extension directory (containing <code>manifest.json</code>).
+                    </p>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;">
+                <button class="btn-secondary" onclick="closeInstallModal()">Close Guide</button>
+                <button class="btn-accent" onclick="handleDownload()">Download ZIP ⬇</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Interaction Scripts -->
     <script>
-        // ===== CAROUSEL LOGIC =====
-        function initCarousel(trackId) {
-            const track = document.getElementById(trackId);
-            const container = track.parentElement;
-            const originalCards = Array.from(track.children);
-            let index = 0;
-            let isPaused = false;
-
-            // Clone for infinite
-            originalCards.forEach(card => track.appendChild(card.cloneNode(true)));
-            originalCards.forEach(card => track.appendChild(card.cloneNode(true)));
-
-            const allCards = Array.from(track.children);
-
-            function update() {
-                if (isPaused) return;
-                index++;
-
-                const cardWidth = allCards[0].offsetWidth;
-                const gap = 40;
-                const totalWidth = cardWidth + gap;
-                const offset = (container.offsetWidth / 2) - (cardWidth / 2);
-
-                track.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                track.style.transform = `translateX(${offset - (index * totalWidth)}px)`;
-
-                allCards.forEach((c, i) => {
-                    if (i === index) c.classList.add('active');
-                    else c.classList.remove('active');
-                });
-
-                if (index >= originalCards.length * 2) {
-                    setTimeout(() => {
-                        track.style.transition = 'none';
-                        index = originalCards.length;
-                        track.style.transform = `translateX(${offset - (index * totalWidth)}px)`;
-                        allCards.forEach((c, i) => {
-                            if (i === index) c.classList.add('active');
-                            else c.classList.remove('active');
-                        });
-                    }, 450);
-                }
-            }
-
-            index = originalCards.length;
-            const cardWidth = allCards[0].offsetWidth;
-            const totalWidth = cardWidth + 40;
-            const offset = (container.offsetWidth / 2) - (cardWidth / 2);
-
-            // Set initial position instantly (no transition flash)
-            track.style.transition = 'none';
-            track.style.transform = `translateX(${offset - (index * totalWidth)}px)`;
-            allCards[index].classList.add('active');
-            setTimeout(() => {
-                track.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-            }, 50);
-
-            // Start immediately, then repeat
-            update();
-            setInterval(update, 1500);
-
-            container.addEventListener('mouseenter', () => isPaused = true);
-            container.addEventListener('mouseleave', () => isPaused = false);
-
-            window.addEventListener('resize', () => {
-                track.style.transition = 'none';
-                const offset = (container.offsetWidth / 2) - (cardWidth / 2);
-                track.style.transform = `translateX(${offset - (index * (cardWidth + 40))}px)`;
-            });
-        }
-
-        // ===== DOWNLOAD HANDLER =====
+        // Download Handler
         function handleDownload() {
-            showToast('Preparing your download...', '⚙️');
+            showToast('Preparing ScamLens extension package...', '⚙️');
             setTimeout(() => {
                 const a = document.createElement('a');
-                a.href = 'datashadow-extension.zip';
-                a.download = 'DataShadow-Extension.zip';
+                a.href = '/scamlens-extension.zip';
+                a.download = 'scamlens-extension.zip';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                showToast('Download started! Follow the install guide ↓', '✅');
-                setTimeout(() => openInstallModal(), 600);
-            }, 800);
+                showToast('Download started! Ready to load in chrome://extensions', '✅');
+            }, 500);
         }
 
-        // ===== INSTALL MODAL =====
-        let currentStep = 0;
-        const STEPS = [
-            {
-                title: '📦 Extract the ZIP',
-                desc: 'Find <code>DataShadow-Extension.zip</code> in your <strong>Downloads</strong> folder.<br><br>Right-click it → choose <strong>"Extract All"</strong> (Windows) or double-click (Mac). When asked where to extract, pick somewhere easy — like your <strong>Desktop</strong>. A new folder called <strong>DataShadow-Extension</strong> will appear.'
-            },
-            {
-                title: '🌐 Open Chrome Extensions',
-                desc: 'Open Google Chrome and type <code onclick="copyUrl()">chrome://extensions/</code> in the address bar, then press <strong>Enter</strong>. <br><br>💡 Click the code above to copy it automatically!'
-            },
-            {
-                title: '🔧 Enable Developer Mode',
-                desc: 'In the top-right corner of the Extensions page, find the <strong>"Developer mode"</strong> toggle and switch it <strong>ON</strong>.<br><br>You will now see three new buttons appear in the top-left: <strong>Load unpacked</strong>, Pack extension, and Update.'
-            },
-            {
-                title: '📂 Click "Load Unpacked"',
-                desc: 'Click the <strong>"Load unpacked"</strong> button (top-left). A file browser window will open.<br><br>Navigate to where you extracted the ZIP in Step 1.'
-            },
-            {
-                title: '📁 Select the Correct Folder',
-                desc: '<strong>⚠️ Very common mistake — read carefully!</strong><br><br>When the file picker opens, you will only see <strong>folders</strong> (not files). So <code>manifest.json</code> will be <strong>invisible</strong> in the dialog — that is normal!<br><br>If you open the folder and only see <code>public</code> and <code>src</code> inside — <strong>you are already inside the right folder!</strong> You went one level too deep.<div class="folder-tree"><span class="ft-root">📁 datashadow-extension</span>  ← <strong style="color:#f0a030">CLICK ONCE, then hit Select Folder</strong><br>&nbsp;&nbsp;├── manifest.json &nbsp;<span class="ft-dim">(hidden in file picker — that is okay!)</span><br>&nbsp;&nbsp;├── 📁 public/<br>&nbsp;&nbsp;└── 📁 src/</div><div class="ft-tip"><span class="ft-tip-icon">👆</span><span><strong>How to do it right:</strong> In the file picker, navigate to your Downloads. You will see the <code>datashadow-extension</code> folder. Click it <strong>once</strong> to highlight it (do NOT double-click to open it), then click the <strong>"Select Folder"</strong> button.</span></div>'
-            },
-            {
-                title: '🛡️ You Are Protected!',
-                desc: 'DataShadow should now appear in your extensions list. Click the puzzle icon (🧩) in your Chrome toolbar and <strong>pin DataShadow</strong> for quick access. The shield icon will appear — you are live!'
-            }
-        ];
-
+        // Install Modal Controls
         function openInstallModal() {
-            currentStep = 0;
-            renderSteps();
             document.getElementById('installModal').classList.add('open');
             document.body.style.overflow = 'hidden';
         }
@@ -2175,157 +1800,41 @@
             document.body.style.overflow = '';
         }
 
-        let goingBack = false;
-
-        function renderSteps() {
-            const dotsContainer  = document.getElementById('stepDots');
-            const doneBanner     = document.getElementById('doneBanner');
-            const stepsBody      = document.getElementById('stepsBody');
-            const counter        = document.getElementById('stepCounter');
-            const nextBtn        = document.getElementById('nextBtn');
-            const prevBtn        = document.getElementById('prevBtn');
-            const sidebarEl      = document.getElementById('stepSidebar');
-            const stepCardView   = document.getElementById('stepCardView');
-
-            // --- Progress dots ---
-            dotsContainer.innerHTML = '';
-            STEPS.forEach((_, i) => {
-                const dot = document.createElement('div');
-                dot.className = 'step-dot' + (i < currentStep ? ' done' : i === currentStep ? ' active' : '');
-                dotsContainer.appendChild(dot);
-            });
-
-            // --- Done screen ---
-            if (currentStep >= STEPS.length) {
-                stepsBody.style.display = 'none';
-                doneBanner.classList.add('visible');
-                counter.textContent = '';
-                nextBtn.style.display = 'none';
-                prevBtn.style.display = 'none';
-                return;
-            }
-
-            stepsBody.style.display = 'block';
-            doneBanner.classList.remove('visible');
-            counter.textContent = `Step ${currentStep + 1} of ${STEPS.length}`;
-            nextBtn.textContent = currentStep === STEPS.length - 1 ? '🎉 Done!' : 'Next →';
-            prevBtn.style.display = currentStep === 0 ? 'none' : 'inline-flex';
-
-            // --- Mini sidebar checklist ---
-            sidebarEl.innerHTML = '';
-            STEPS.forEach((step, i) => {
-                const item = document.createElement('div');
-                item.className = 'sbar-item' + (i < currentStep ? ' done' : i === currentStep ? ' active' : '');
-                item.innerHTML = `<span class="sbar-dot"></span>${i < currentStep ? '✓ ' : ''}${i + 1}. ${step.title.replace(/^.\S*\s/, '')}`;
-                sidebarEl.appendChild(item);
-            });
-
-            // --- Single step card (slide animation) ---
-            const step = STEPS[currentStep];
-            const card = document.createElement('div');
-            card.className = 'step-slide' + (goingBack ? ' slide-back' : '');
-            card.innerHTML = `
-                <div class="step-icon-badge">Step ${currentStep + 1} of ${STEPS.length}</div>
-                <div class="step-main-title">${step.title}</div>
-                <div class="step-main-desc">${step.desc}</div>
-            `;
-            stepCardView.innerHTML = '';
-            stepCardView.appendChild(card);
-            goingBack = false;
-        }
-
-        function nextStep() {
-            goingBack = false;
-            currentStep++;
-            renderSteps();
-        }
-
-        function prevStep() {
-            if (currentStep > 0) {
-                goingBack = true;
-                currentStep--;
-                renderSteps();
-            }
-        }
-
-        function copyUrl() {
-            navigator.clipboard.writeText('chrome://extensions/').then(() => {
-                showToast('chrome://extensions/ copied!', '📋');
-            });
-        }
-
-        // ===== TOAST =====
+        // Toast Notifications
         function showToast(msg, icon = '🔔') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.classList.add('visible'), 10);
-            setTimeout(() => {
-                toast.classList.remove('visible');
-                setTimeout(() => toast.remove(), 400);
-            }, 3000);
+            const toast = document.getElementById('toast');
+            if (!toast) return;
+            toast.textContent = `${icon} ${msg}`;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 3200);
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            initCarousel('aboutTrack');
-            initCarousel('featureTrack');
-
-            // ===== THEME TOGGLE =====
-            const savedTheme = localStorage.getItem('ds-theme');
-            if (savedTheme === 'light') {
-                document.documentElement.setAttribute('data-theme', 'light');
-                document.getElementById('theme-toggle').textContent = '☀️';
-            }
-
-            // ===== BINARY BACKGROUND =====
-            const bgLayer = document.querySelector('.bg-layer');
-            const binaryContainer = document.createElement('div');
-            binaryContainer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:0;user-select:none;overflow:hidden;';
-            for (let i = 0; i < 60; i++) {
-                const digit = document.createElement('span');
-                const dur = (3 + Math.random() * 5).toFixed(1);
-                const delay = (Math.random() * 8).toFixed(1);
-                digit.textContent = Math.random() > 0.5 ? '1' : '0';
-                digit.style.cssText = `
-                    position: absolute;
-                    left: ${(Math.random() * 100).toFixed(1)}%;
-                    top: ${(Math.random() * 100).toFixed(1)}%;
-                    font-size: ${Math.random() > 0.5 ? '0.8rem' : '0.6rem'};
-                    color: rgba(193, 127, 36, 0.06);
-                    font-family: monospace;
-                    animation: binaryPulse ${dur}s ease-in-out ${delay}s infinite alternate;
-                    pointer-events: none;
-                    user-select: none;
-                `;
-                binaryContainer.appendChild(digit);
-            }
-            bgLayer.appendChild(binaryContainer);
-
-        });
-
+        // Theme Toggle (Light / Dark)
         function toggleTheme() {
             const html = document.documentElement;
             const btn = document.getElementById('theme-toggle');
             if (html.getAttribute('data-theme') === 'light') {
                 html.removeAttribute('data-theme');
-                btn.textContent = '🌙';
-                localStorage.setItem('ds-theme', 'dark');
+                if (btn) btn.textContent = '🌙';
+                localStorage.setItem('scamlens-theme', 'dark');
             } else {
                 html.setAttribute('data-theme', 'light');
-                btn.textContent = '☀️';
-                localStorage.setItem('ds-theme', 'light');
+                if (btn) btn.textContent = '☀️';
+                localStorage.setItem('scamlens-theme', 'light');
             }
         }
 
-        function toggleAccordion(btn) {
-            const body = btn.nextElementSibling;
-            const chevron = btn.querySelector('.chevron');
-            body.classList.toggle('open');
-            chevron.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
-        }
+        // Restore saved theme
+        (function() {
+            const saved = localStorage.getItem('scamlens-theme');
+            if (saved === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                const btn = document.getElementById('theme-toggle');
+                if (btn) btn.textContent = '☀️';
+            }
+        })();
 
+        // FAQ Accordion
         function toggleFaq(qEl) {
             const item = qEl.parentElement;
             const isOpen = item.classList.contains('open');
@@ -2334,32 +1843,7 @@
         }
     </script>
 
-    <!-- ===== INSTALL GUIDE MODAL ===== -->
-    <div class="modal-overlay" id="installModal" onclick="if(event.target===this)closeInstallModal()">
-        <div class="modal-box">
-            <button class="modal-close" onclick="closeInstallModal()">✕</button>
-            <div class="modal-title">🎉 Install ScamLens in 3 Easy Steps</div>
-            <div class="modal-subtitle">Load ScamLens as an unpacked Chrome extension:</div>
-            <div class="step-dots" id="stepDots"></div>
-            <div id="stepsBody">
-                <div class="step-sidebar" id="stepSidebar"></div>
-                <div class="step-card-view" id="stepCardView"></div>
-                <div class="modal-nav">
-                    <button class="modal-btn modal-btn-secondary" id="prevBtn" onclick="prevStep()">← Back</button>
-                    <span class="modal-counter" id="stepCounter"></span>
-                    <button class="modal-btn modal-btn-primary" id="nextBtn" onclick="nextStep()">Next →</button>
-                </div>
-            </div>
-            <div class="done-banner" id="doneBanner">
-                <div class="done-icon">🛡️</div>
-                <div class="done-title">You're Protected!</div>
-                <div class="done-sub">ScamLens is now active in your Chrome browser.<br>Click the shield icon in your toolbar to evaluate links and block trackers.</div>
-                <button class="modal-btn modal-btn-primary" style="margin-top:1.5rem;" onclick="closeInstallModal()">Close Guide</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Web Scanner Controller -->
+    <!-- Web Application Logic Controller -->
     <script type="module" src="./src/scripts/web-scanner.js"></script>
 </body>
 

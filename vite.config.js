@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 import fs from 'fs';
 
@@ -35,23 +35,36 @@ function copyExtensionFiles() {
   };
 }
 
-export default defineConfig({
-  root: '.',
-  base: './',
-  publicDir: 'public',
-  plugins: [copyExtensionFiles()],
-  build: {
-    outDir: 'dist',
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-        dashboard: resolve(__dirname, 'src/pages/dashboard.html'),
-        onboard: resolve(__dirname, 'src/pages/onboard.html'),
-        report: resolve(__dirname, 'src/pages/report.html'),
-        popup: resolve(__dirname, 'src/pages/popup.html'),
-        whatif: resolve(__dirname, 'src/pages/whatif.html'),
-        history: resolve(__dirname, 'src/pages/history.html'),
+export default defineConfig(({ mode }) => {
+  // Load .env variables (supports .env, .env.local, .env.development, etc.)
+  const env = loadEnv(mode, process.cwd(), '');
+
+  return {
+    root: '.',
+    base: './',
+    publicDir: 'public',
+    plugins: [copyExtensionFiles()],
+
+    // Inject VITE_ env vars as build-time constants accessible in JS as __ENV__.*
+    define: {
+      '__ENV__.GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || ''),
+      '__ENV__.BACKEND_URL':    JSON.stringify(env.VITE_BACKEND_URL    || ''),
+      '__ENV__.SHARED_TOKEN':   JSON.stringify(env.VITE_SHARED_TOKEN   || 'scamlens-demo-token'),
+    },
+
+    build: {
+      outDir: 'dist',
+      rollupOptions: {
+        input: {
+          main:      resolve(__dirname, 'index.html'),
+          dashboard: resolve(__dirname, 'src/pages/dashboard.html'),
+          onboard:   resolve(__dirname, 'src/pages/onboard.html'),
+          report:    resolve(__dirname, 'src/pages/report.html'),
+          popup:     resolve(__dirname, 'src/pages/popup.html'),
+          whatif:    resolve(__dirname, 'src/pages/whatif.html'),
+          history:   resolve(__dirname, 'src/pages/history.html'),
+        },
       },
     },
-  },
+  };
 });

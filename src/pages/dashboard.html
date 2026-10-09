@@ -15,6 +15,9 @@
       --red-glow: rgba(255,51,51,0.3);
       --orange: #ff8800;
       --orange-glow: rgba(255,136,0,0.3);
+      --green:  #10b981;
+      --amber:  #f59e0b;
+      --blue:   #38bdf8;
       --black:  #000000;
       --white:  #ffffff;
       --bg:     #020202;
@@ -511,10 +514,12 @@
       </div>
       <div style="display: flex; align-items: center; gap: 20px;">
         <div class="dash-nav">
-          <a href="#" class="active" id="nav-dashboard">Dashboard</a>
-          <a href="#" id="nav-whatif">What-If</a>
-          <a href="#" id="nav-report">Full Report</a>
-          <a href="#" id="nav-history">History</a>
+          <a href="popup.html" id="nav-scanner">⚡ Live Scanner</a>
+          <a href="dashboard.html" class="active" id="nav-dashboard">📊 Telemetry</a>
+          <a href="whatif.html" id="nav-whatif">🧪 What-If Sandbox</a>
+          <a href="pro.html" id="nav-pro" style="color: #fbbf24; font-weight: 700;">⭐ Pro Systems</a>
+          <a href="report.html" id="nav-report">📄 Safety Audit</a>
+          <a href="history.html" id="nav-history">📜 History</a>
         </div>
       </div>
     </div>
@@ -596,30 +601,28 @@
     <!-- ── Row 1: Massive Privacy Map ── -->
     <div class="content-row animate-in delay-4" style="grid-template-columns: 1fr;">
       <!-- Privacy Threat Map -->
-      <div class="panel map-wrapper" style="padding: 0;">
-        <div class="panel-header" style="padding: 24px 28px 0; margin-bottom: 16px;">
+      <div class="panel map-wrapper" style="padding: 0; position: relative;">
+        <div class="panel-header" style="padding: 24px 28px 0; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div class="panel-title" style="margin-bottom:0; font-size: 22px;">
             <span class="icon">🌍</span>
             Global Threat Map
           </div>
-          <div class="panel-meta" style="font-size: 13px; color: var(--blue); font-weight: bold; background: rgba(56,189,248,0.1); padding: 6px 12px; border-radius: 20px;">
-            <span id="map-count-label">0 server locations</span>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" id="btn-simulate-ping" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: all 0.2s;">🔄 Refresh Telemetry</button>
+            <div class="panel-meta" style="font-size: 13px; color: var(--blue); font-weight: bold; background: rgba(56,189,248,0.1); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(56,189,248,0.2);">
+              <span id="map-count-label">16 Global Threat Vectors Monitored · Active</span>
+            </div>
           </div>
         </div>
-        <div class="map-container" id="map-container" style="background: #000; overflow: hidden; position: relative; height: 450px; z-index: 5;">
-          <!-- Custom Map Controls -->
-          <div class="map-controls">
-            <button class="map-btn" id="map-zoom-in" title="Zoom In">+</button>
-            <button class="map-btn" id="map-zoom-out" title="Zoom Out">−</button>
-            <button class="map-btn reset" id="map-zoom-reset" title="My Location">🏠</button>
-            <button class="map-btn fit" id="map-zoom-fit" title="See All Threats">🔍</button>
-          </div>
-          <!-- Leaflet Map Container -->
+        <div class="map-container" id="map-container" style="background: #020612; overflow: hidden; position: relative; height: 480px; z-index: 5;">
+          <!-- SVG Tracker Map rendered by dashboard.js -->
         </div>
-        <div class="map-legend" style="padding: 16px 28px 24px; display: flex; gap: 20px; align-items: center; background: rgba(0,0,0,0.2);">
-          <span class="map-legend-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--sub);">Detection Feed:</span>
-          <div class="map-legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #fff;"><div class="map-legend-dot" style="width: 8px; height: 8px; border-radius: 50%; background:#ff3333; box-shadow: 0 0 10px #ff3333;"></div>Blocked Tracker</div>
-          <div class="map-legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #fff;"><div class="map-legend-dot" style="width: 8px; height: 8px; border-radius: 50%; background:var(--green); box-shadow: 0 0 10px var(--green);"></div>You (Safe)</div>
+        <div class="map-legend" style="padding: 16px 28px 24px; display: flex; gap: 20px; align-items: center; background: rgba(0,0,0,0.35); flex-wrap: wrap;">
+          <span class="map-legend-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--sub);">Live Telemetry Feed:</span>
+          <div class="map-legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #fff;"><div class="map-legend-dot" style="width: 8px; height: 8px; border-radius: 50%; background:#ef4444; box-shadow: 0 0 10px #ef4444;"></div>Blocked Ad / Phish</div>
+          <div class="map-legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #fff;"><div class="map-legend-dot" style="width: 8px; height: 8px; border-radius: 50%; background:#f97316; box-shadow: 0 0 10px #f97316;"></div>Social Tracker Pixel</div>
+          <div class="map-legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #fff;"><div class="map-legend-dot" style="width: 8px; height: 8px; border-radius: 50%; background:#f59e0b; box-shadow: 0 0 10px #f59e0b;"></div>Data Broker / Analytics</div>
+          <div class="map-legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #fff;"><div class="map-legend-dot" style="width: 8px; height: 8px; border-radius: 50%; background:#10b981; box-shadow: 0 0 12px #10b981;"></div>Your Shield Endpoint (Safe)</div>
         </div>
       </div>
     </div>
