@@ -1,10 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  // Security Gate: Redirect if not logged in
-  const authData = await chrome.storage.local.get(['supabaseUser', 'supabaseToken']);
-  if (!authData.supabaseUser || !authData.supabaseToken) {
-    console.warn("[DataShadow] Auth missing, but allowing report access.");
-  }
-
   // ── Nav links ──
   const navigateTo = (page) => {
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
@@ -15,12 +9,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   const dashboardNav = document.getElementById('nav-dashboard');
-  const proNav = document.getElementById('nav-pro');
   const whatifNav = document.getElementById('nav-whatif');
   const historyNav = document.getElementById('nav-history');
 
   if (dashboardNav) dashboardNav.onclick = (e) => { e.preventDefault(); navigateTo('dashboard'); };
-  if (proNav) proNav.onclick = (e) => { e.preventDefault(); navigateTo('pro'); };
   if (whatifNav) whatifNav.onclick = (e) => { e.preventDefault(); navigateTo('whatif'); };
   if (historyNav) historyNav.onclick = (e) => { e.preventDefault(); navigateTo('history'); };
 

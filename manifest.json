@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "DataShadow",
+  "name": "ScamLens",
   "version": "1.0",
-  "description": "Expose the shadow data websites collect about you.",
+  "description": "AI-assisted phishing & scam detection, malicious link analyzer, and privacy shield. Rules decide. AI explains.",
   "permissions": [
     "cookies",
     "storage",
@@ -11,9 +11,7 @@
     "scripting",
     "declarativeNetRequest",
     "declarativeNetRequestFeedback",
-    "identity",
-    "webRequest",
-    "geolocation"
+    "webRequest"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -41,7 +39,10 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/pages/report.html", "src/pages/dashboard.html", "src/pages/pro.html", "src/pages/auth-callback.html", "public/world-map.svg"],
+      "resources": [
+        "src/pages/report.html",
+        "src/pages/dashboard.html"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

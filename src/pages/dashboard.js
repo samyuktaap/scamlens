@@ -1,8 +1,4 @@
-// DataShadow Value Dashboard — Enhanced Logic
-let leafletMap = null;
-let userMarker = null;
-let trackerLayers = [];
-let cachedUserLocation = null; // Zero Latency Cache
+// ScamLens Security & Privacy Dashboard Logic
 
 document.addEventListener('DOMContentLoaded', async () => {
   // ── Nav links (Attach early so they work even if auth fails) ──
@@ -17,53 +13,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const dashboardNav = document.getElementById('nav-dashboard');
   const reportNav = document.getElementById('nav-report');
-  const proNav = document.getElementById('nav-pro');
   const whatifNav = document.getElementById('nav-whatif');
   const historyNav = document.getElementById('nav-history');
 
   if (dashboardNav) dashboardNav.onclick = (e) => { e.preventDefault(); navigateTo('dashboard'); };
   if (reportNav) reportNav.onclick = (e) => { e.preventDefault(); navigateTo('report'); };
-  if (proNav) proNav.onclick = (e) => { e.preventDefault(); navigateTo('pro'); };
   if (whatifNav) whatifNav.onclick = (e) => { e.preventDefault(); navigateTo('whatif'); };
   if (historyNav) historyNav.onclick = (e) => { e.preventDefault(); navigateTo('history'); };
 
-  // Bulletproof context check: Allow dashboard to run even as a local file for demos
   const isExt = typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
-  let authData = { supabaseUser: { email: 'demo@datashadow.ai' }, supabaseToken: 'demo' };
-
-  if (isExt) {
-    try {
-      authData = await chrome.storage.local.get(['supabaseUser', 'supabaseToken', 'shieldActive']);
-    } catch (e) { console.error("Storage error:", e); }
-  }
-
-  // Only force redirect/close if explicitly in extension mode and missing auth
-  if (isExt && (!authData.supabaseUser || !authData.supabaseToken)) {
-    console.warn("[DataShadow] Auth missing, but allowing navigation access.");
-    // We don't close anymore, let user see the dashboard or try to navigate
-  }
 
   loadDashboardData();
   renderPrivacyTip();
-
-  // Show user info
-  if (authData && authData.supabaseUser) {
-    const emailEl = document.getElementById('user-email');
-    const avatarEl = document.getElementById('user-avatar');
-    if (emailEl) emailEl.textContent = authData.supabaseUser.email;
-    if (avatarEl) avatarEl.textContent = authData.supabaseUser.email[0].toUpperCase();
-  }
-
-  // Logout logic
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
-    logoutBtn.onclick = async () => {
-      if (isExt) {
-        await chrome.storage.local.remove(['supabaseToken', 'supabaseUser']);
-      }
-      window.location.reload();
-    };
-  }
 
   if (isExt) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -176,48 +137,6 @@ function handleFingerprintAlert(msg) {
   }
 }
 
-// ── Tracker Location Database ──
-const TRACKER_LOCATIONS = [
-  // Ad Networks (red)
-  { name: 'Google Ads', domain: 'doubleclick.net', lat: 37.4, lon: -122.1, type: 'ad', city: 'Mountain View, US' },
-  { name: 'Google Syndication', domain: 'googlesyndication.com', lat: 37.4, lon: -122.1, type: 'ad', city: 'Mountain View, US' },
-  { name: 'AppNexus', domain: 'adnxs.com', lat: 40.7, lon: -74.0, type: 'ad', city: 'New York, US' },
-  { name: 'Criteo', domain: 'criteo.com', lat: 48.9, lon: 2.3, type: 'ad', city: 'Paris, France' },
-  { name: 'OpenX', domain: 'openx.net', lat: 34.0, lon: -118.2, type: 'ad', city: 'Los Angeles, US' },
-  { name: 'PubMatic', domain: 'pubmatic.com', lat: 37.4, lon: -122.0, type: 'ad', city: 'Redwood City, US' },
-  { name: 'Taboola', domain: 'taboola.com', lat: 40.7, lon: -74.0, type: 'ad', city: 'New York, US' },
-  { name: 'Amazon Ads', domain: 'amazon-adsystem.com', lat: 47.6, lon: -122.3, type: 'ad', city: 'Seattle, US' },
-  { name: 'Smart AdServer', domain: 'smartadserver.com', lat: 48.9, lon: 2.3, type: 'ad', city: 'Paris, France' },
-  // Analytics (amber)
-  { name: 'Google Analytics', domain: 'google-analytics.com', lat: 37.4, lon: -122.1, type: 'analytics', city: 'Mountain View, US' },
-  { name: 'Hotjar', domain: 'hotjar.com', lat: 35.9, lon: 14.4, type: 'analytics', city: 'Malta' },
-  { name: 'FullStory', domain: 'fullstory.com', lat: 33.7, lon: -84.4, type: 'analytics', city: 'Atlanta, US' },
-  { name: 'Mixpanel', domain: 'mixpanel.com', lat: 37.8, lon: -122.4, type: 'analytics', city: 'San Francisco, US' },
-  { name: 'Amplitude', domain: 'amplitude.com', lat: 37.8, lon: -122.4, type: 'analytics', city: 'San Francisco, US' },
-  { name: 'Chartbeat', domain: 'chartbeat.com', lat: 40.7, lon: -74.0, type: 'analytics', city: 'New York, US' },
-  // Social (purple)
-  { name: 'Facebook Pixel', domain: 'facebook.net', lat: 37.5, lon: -122.1, type: 'social', city: 'Menlo Park, US' },
-  { name: 'Twitter Analytics', domain: 'analytics.twitter.com', lat: 37.8, lon: -122.4, type: 'social', city: 'San Francisco, US' },
-  { name: 'LinkedIn Insight', domain: 'snap.licdn.com', lat: 37.4, lon: -122.1, type: 'social', city: 'Sunnyvale, US' },
-  { name: 'Bing Ads', domain: 'bat.bing.com', lat: 47.6, lon: -122.1, type: 'social', city: 'Redmond, US' },
-  // Data Brokers (blue)
-  { name: 'BlueKai (Oracle)', domain: 'bluekai.com', lat: 37.5, lon: -122.3, type: 'broker', city: 'Redwood City, US' },
-  { name: 'Adobe Audience', domain: 'demdex.net', lat: 37.3, lon: -121.9, type: 'broker', city: 'San Jose, US' },
-  { name: 'Krux (Salesforce)', domain: 'krxd.net', lat: 37.8, lon: -122.4, type: 'broker', city: 'San Francisco, US' },
-  { name: 'Tapad', domain: 'tapad.com', lat: 40.7, lon: -74.0, type: 'broker', city: 'New York, US' },
-  { name: 'Eyeota', domain: 'eyeota.net', lat: 1.3, lon: 103.8, type: 'broker', city: 'Singapore' },
-  // Extra global spread
-  { name: 'Yandex Metrica', domain: 'mc.yandex.ru', lat: 55.8, lon: 37.6, type: 'analytics', city: 'Moscow, Russia' },
-  { name: 'Baidu Analytics', domain: 'hm.baidu.com', lat: 39.9, lon: 116.4, type: 'analytics', city: 'Beijing, China' },
-  { name: 'Adcolony', domain: 'adcolony.com', lat: 34.0, lon: -118.5, type: 'ad', city: 'Los Angeles, US' },
-  { name: 'InMobi', domain: 'inmobi.com', lat: 12.97, lon: 77.59, type: 'ad', city: 'Bangalore, India' },
-  { name: 'Adjust', domain: 'adjust.com', lat: 52.5, lon: 13.4, type: 'analytics', city: 'Berlin, Germany' },
-  { name: 'Lotame', domain: 'crwdcntrl.net', lat: 39.3, lon: -76.6, type: 'broker', city: 'Baltimore, US' },
-];
-
-const TYPE_COLORS = { ad: '#ff3333', analytics: '#f59e0b', social: '#a78bfa', broker: '#38bdf8' };
-const TYPE_LABELS = { ad: 'Ad Network', analytics: 'Analytics', social: 'Social Tracking', broker: 'Data Broker' };
-
 // ── Load Dashboard Data ──
 function loadDashboardData() {
   const processData = (res) => {
@@ -314,7 +233,6 @@ function loadDashboardData() {
     renderDataBreakdown(stats);
     renderShieldPerformance(stats, res.shieldActive !== false);
     renderActivityLog(res.activityLog || []);
-    renderPrivacyMap(stats.geoTrackers || []);
 
     // Render Protected Sites List
     const sitesList = document.getElementById('protected-sites-list');
@@ -425,241 +343,6 @@ function renderWeeklyChart(wd) {
     }, 120 + idx * 90);
   });
 }
-
-// ── Real Tracker Geo-Map (Leaflet.js) ──
-/**
- * STEP 1: Get the real user location using browser Geolocation API
- * Falls back to IP-based geolocation if user denies permission
- */
-async function getRealUserLocation() {
-  if (cachedUserLocation) return cachedUserLocation;
-
-  return new Promise((resolve) => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          cachedUserLocation = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-            source: 'gps'
-          };
-          resolve(cachedUserLocation);
-        },
-        async (error) => {
-          try {
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
-            cachedUserLocation = {
-              lat: data.latitude,
-              lon: data.longitude,
-              city: data.city,
-              country: data.country_name,
-              source: 'ip'
-            };
-            resolve(cachedUserLocation);
-          } catch (e) {
-            resolve({ lat: 20, lon: 0, source: 'fallback' });
-          }
-        },
-        { timeout: 5000, maximumAge: 3600000 }
-      );
-    } else {
-      resolve({ lat: 20, lon: 77, city: 'India', country: 'IN', source: 'fallback' });
-    }
-  });
-}
-
-/**
- * INSTANT MATCH ENGINE
- * Zero-latency lookup for tracker locations based on domain names.
- */
-function getTrackerLocation(domain) {
-  if (!domain) return null;
-  const lowerDomain = domain.toLowerCase();
-  
-  // 1. Check Hardcoded Database (Fastest)
-  const match = TRACKER_LOCATIONS.find(t => lowerDomain.includes(t.domain.toLowerCase()) || t.name.toLowerCase().includes(lowerDomain));
-  if (match) return match;
-  
-  // 2. REGIONAL INTELLIGENCE RESOLVER (Zero-Latency API-less Geo)
-  const regions = [
-    { suffix: '.ru', lat: 55.75, lon: 37.61, city: 'Moscow, RU' },
-    { suffix: '.cn', lat: 39.90, lon: 116.40, city: 'Beijing, CN' },
-    { suffix: '.in', lat: 12.97, lon: 77.59, city: 'Bangalore, IN' },
-    { suffix: '.uk', lat: 51.50, lon: -0.12, city: 'London, UK' },
-    { suffix: '.de', lat: 52.52, lon: 13.40, city: 'Berlin, DE' },
-    { suffix: '.fr', lat: 48.85, lon: 2.35, city: 'Paris, FR' },
-    { suffix: '.br', lat: -23.55, lon: -46.63, city: 'Sao Paulo, BR' },
-    { suffix: '.jp', lat: 35.68, lon: 139.76, city: 'Tokyo, JP' },
-    { suffix: '.au', lat: -33.86, lon: 151.20, city: 'Sydney, AU' },
-    { suffix: '.ca', lat: 43.65, lon: -79.38, city: 'Toronto, CA' },
-    { suffix: '.eu', lat: 50.85, lon: 4.35, city: 'Brussels, EU' },
-    { suffix: '.kh', lat: 11.55, lon: 104.91, city: 'Phnom Penh, KH' },
-    { suffix: '.sg', lat: 1.35, lon: 103.81, city: 'Singapore, SG' },
-    { suffix: '.th', lat: 13.75, lon: 100.50, city: 'Bangkok, TH' }
-  ];
-
-  const regionMatch = regions.find(r => lowerDomain.endsWith(r.suffix));
-  if (regionMatch) {
-    return { ...regionMatch, name: domain, type: 'ad' };
-  }
-
-  // 3. DETERMINISTIC HASH FALLBACK (Spread unknown threats globally)
-  let hash = 0;
-  for (let i = 0; i < domain.length; i++) {
-    hash = ((hash << 5) - hash) + domain.charCodeAt(i);
-    hash |= 0;
-  }
-  
-  return {
-    name: domain,
-    lat: (Math.abs(hash % 120) - 60), 
-    lon: (Math.abs((hash * 17) % 360) - 180), 
-    city: 'Distributed Network',
-    type: 'ad'
-  };
-}
-
-/**
- * STEP 2: Load real tracker geo data from chrome.storage.local
- */
-async function getRealGeoTrackers() {
-  return new Promise((resolve) => {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get('dashboardStats', (data) => {
-        const stats = data.dashboardStats || {};
-        const geoTrackers = stats.geoTrackers || [];
-        resolve(geoTrackers);
-      });
-    } else {
-      resolve(TRACKER_LOCATIONS.slice(0, 10)); // Fallback for local demo
-    }
-  });
-}
-
-/**
- * STEP 3: Render the map with REAL data
- */
-async function renderPrivacyMap(providedTrackers) {
-  const container = document.getElementById('map-container');
-  if (!container || !window.L) return;
-
-  // 1. Get User Location (Fast from cache)
-  const userLocation = await getRealUserLocation();
-  const userLat = (userLocation.lat === 20 && userLocation.lon === 0) ? 20.59 : userLocation.lat;
-  const userLon = (userLocation.lat === 20 && userLocation.lon === 0) ? 78.96 : userLocation.lon;
-  const userPos = [userLat, userLon];
-
-  // 2. Resolve Tracker Locations using INSTANT MATCH ENGINE
-  let currentSiteTrackers = [];
-  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-    const res = await new Promise(r => chrome.storage.local.get(['currentSiteStats'], r));
-    if (res.currentSiteStats) {
-      const names = res.currentSiteStats.trackerNames || [];
-      // Always include the site domain itself as the primary destination
-      const allDomains = [res.currentSiteStats.domain, ...names];
-      currentSiteTrackers = allDomains.map(name => getTrackerLocation(name)).filter(t => t);
-    }
-  }
-
-  // If no site trackers, show global trackers from provided list
-  const finalTrackers = currentSiteTrackers.length > 0 ? currentSiteTrackers : (providedTrackers || []);
-
-  // ── Initialize Map (only once) ──
-  if (!leafletMap) {
-    leafletMap = L.map('map-container', {
-      center: userPos,
-      zoom: 3,
-      zoomControl: false,
-      attributionControl: false,
-      minZoom: 2,
-      maxZoom: 12,
-      worldCopyJump: true,
-      scrollWheelZoom: 'center'
-    });
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd',
-      maxZoom: 19,
-      noWrap: false
-    }).addTo(leafletMap);
-
-    // Setup custom controls listeners
-    const zIn = document.getElementById('map-zoom-in');
-    const zOut = document.getElementById('map-zoom-out');
-    const zReset = document.getElementById('map-zoom-reset');
-    const zFit = document.getElementById('map-zoom-fit');
-
-    if (zIn) zIn.onclick = () => leafletMap.zoomIn();
-    if (zOut) zOut.onclick = () => leafletMap.zoomOut();
-    if (zReset) zReset.onclick = () => leafletMap.flyTo(userPos, 4);
-    if (zFit) zFit.onclick = () => {
-      const markers = trackerLayers.filter(l => l instanceof L.CircleMarker);
-      if (userMarker) markers.push(userMarker);
-      if (markers.length > 0) {
-        const group = new L.featureGroup(markers);
-        leafletMap.flyToBounds(group.getBounds(), { padding: [80, 80], maxZoom: 8 });
-      }
-    };
-  }
-
-  // ── LIVE SITE SWITCHING ENGINE (Zero Latency) ──
-  const currentTrackerCount = finalTrackers.length;
-  const lastTrackerCount = leafletMap._lastTrackerCount || 0;
-  
-  if (currentTrackerCount !== lastTrackerCount || !leafletMap._initialized) {
-    trackerLayers.forEach(layer => leafletMap.removeLayer(layer));
-    trackerLayers = [];
-
-    // Add "YOU" Marker
-    if (userMarker) leafletMap.removeLayer(userMarker);
-    const locationLabel = userLocation.city ? `YOU — ${userLocation.city}` : 'YOU (Secured)';
-    userMarker = L.circleMarker(userPos, {
-      radius: 12, fillColor: '#00ff88', color: '#ffffff', weight: 3, fillOpacity: 1,
-      className: 'user-location-marker user-pulse'
-    }).addTo(leafletMap).bindTooltip(`<b>🟢 ${locationLabel}</b>`, { permanent: true, direction: 'top' });
-
-    // Render Trackers (Instant Match Engine)
-    finalTrackers.forEach((tracker) => {
-      try {
-        const tLat = Number(tracker.lat);
-        const tLon = Number(tracker.lon);
-        if (isNaN(tLat) || isNaN(tLon)) return;
-
-        const trackerPos = [tLat, tLon];
-        const marker = L.circleMarker(trackerPos, {
-          radius: 8, fillColor: '#ff3333', color: '#ffffff', weight: 2, fillOpacity: 0.9,
-          className: 'tracker-dot animate-pulse'
-        }).addTo(leafletMap);
-
-        marker.bindTooltip(`<b>🔴 THREAT: ${tracker.name || 'Unknown'}</b><br>📍 ${tracker.city || 'Distributed'}`);
-        trackerLayers.push(marker);
-
-        // Data Pipe Animation
-        const line = L.polyline([userPos, trackerPos], {
-          color: 'rgba(255, 51, 51, 0.7)',
-          weight: 2, dashArray: '10, 10', opacity: 0.8,
-          className: 'tracker-pipe'
-        }).addTo(leafletMap);
-        trackerLayers.push(line);
-      } catch (e) { console.error(e); }
-    });
-
-    leafletMap._lastTrackerCount = currentTrackerCount;
-    leafletMap._initialized = true;
-
-    // Auto-zoom to fit the threats on switch
-    if (finalTrackers.length > 0) {
-      const markers = [...trackerLayers.filter(l => l instanceof L.CircleMarker), userMarker];
-      const group = new L.featureGroup(markers);
-      leafletMap.flyToBounds(group.getBounds(), { padding: [100, 100], maxZoom: 5, duration: 1.5 });
-    }
-  }
-
-  const label = document.getElementById('map-count-label');
-  if (label) label.textContent = currentSiteTrackers.length > 0 ? `LIVE THREATS ON THIS SITE: ${currentSiteTrackers.length}` : `${finalTrackers.length} global server locations detected`;
-}
-
 
 // ── Data Breakdown Panel ──
 function renderDataBreakdown(stats) {

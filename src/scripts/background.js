@@ -1,12 +1,12 @@
-// ── DataShadow Background Service Worker ──
-// 100% LOCAL ARCHITECTURE - Data stays on device.
+// ── ScamLens Background Service Worker ──
+// "Rules decide. AI explains."
+// 100% LOCAL ARCHITECTURE - Offline first.
 
 try {
   importScripts('telemetry.js');
 } catch (e) {
-  console.error('[DataShadow] Failed to load telemetry utility:', e);
+  console.error('[ScamLens] Failed to load telemetry utility:', e);
 }
-
 
 // AUTO-RESTORE: Re-enable shield on browser start if it was ON
 chrome.runtime.onStartup.addListener(async () => {
@@ -14,7 +14,7 @@ chrome.runtime.onStartup.addListener(async () => {
   const { shieldActive } = await getStorage('shieldActive');
   if (shieldActive) {
     enableShadowShield();
-    console.log('[DataShadow] Shield auto-restored on startup.');
+    console.log('[ScamLens] Shield auto-restored on startup.');
   }
 });
 
@@ -30,29 +30,28 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
-// ── REAL-TIME TRACKER INTERCEPTOR (High Fidelity) ────────────────────────────
+// ── REAL-TIME TRACKER INTERCEPTOR (Observer) ────────────────────────────
 chrome.webRequest.onBeforeRequest.addListener(
-  (details) => {
+  async (details) => {
     if (details.type !== 'main_frame' && details.url.startsWith('http')) {
       try {
+        const { shieldActive } = await getStorage('shieldActive');
+        if (!shieldActive) return; // Only record when shield is ON
+
         const url = new URL(details.url);
         const domain = url.hostname;
         
-        // Check if this domain is in our blocklist
-        const isTracker = TRACKER_BLOCKLIST.some(blocked => domain.includes(blocked));
+        // Domain-anchored blocklist check
+        const isTracker = TRACKER_BLOCKLIST.some(blocked => domain === blocked || domain.endsWith('.' + blocked));
         
         if (isTracker) {
-          console.log(`[DataShadow Intercept] 🛡️ Real-time threat caught: ${domain}`);
-          
-          // 1. Get current tab to associate with a site
           chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (tabs[0] && tabs[0].url) {
               const siteDomain = new URL(tabs[0].url).hostname;
+              // Avoid self-blocking on first-party domains
+              if (domain === siteDomain || siteDomain.endsWith('.' + domain)) return;
               
-              // 2. Record the block event immediately
               recordBlockEvent(1, siteDomain, domain, details.type);
-              
-              // 3. Update AI Risk Score dynamically
               updateAIRisk(siteDomain);
             }
           });
@@ -63,14 +62,10 @@ chrome.webRequest.onBeforeRequest.addListener(
   { urls: ["<all_urls>"] }
 );
 
-// Fallback: Also listen to declarativeNetRequest events if available for higher reliability
+// DeclarativeNetRequest debug listener: Log only, do NOT double-count block events
 if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.onRuleMatchedDebug) {
   chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
-    console.log("[DataShadow DNR] Blocked tracker via rules:", info.request.url);
-    try {
-      const url = new URL(info.request.url);
-      recordBlockEvent(1, "Active Site", url.hostname);
-    } catch(e) {}
+    console.log("[ScamLens DNR] Blocked tracker via rules:", info.request.url);
   });
 }
 
@@ -178,46 +173,6 @@ let blockQueue = 0;
 let bytesQueue = 0;
 let valueQueue = 0;
 let blockTimeout = null;
-let geoCache = {}; // In-memory cache for the current session
-
-async function getGeoCache() {
-  const { trackerGeoCache = {} } = await chrome.storage.local.get('trackerGeoCache');
-  return trackerGeoCache;
-}
-
-async function resolveTrackerGeo(domain) {
-  // 1. Check in-memory/storage cache
-  const cache = await getGeoCache();
-  if (cache[domain]) return cache[domain];
-  if (geoCache[domain]) return geoCache[domain];
-
-  try {
-    // 2. Fetch from Geo-IP API (ipapi.co supports HTTPS)
-    const res = await fetch(`https://ipapi.co/${domain}/json/`);
-    const data = await res.json();
-
-    if (!data.error) {
-      const geoData = {
-        city: data.city,
-        country: data.country_name,
-        lat: data.latitude,
-        lon: data.longitude,
-        ip: data.ip,
-        timestamp: Date.now()
-      };
-      
-      // 3. Save to cache
-      geoCache[domain] = geoData;
-      const updatedCache = { ...cache, [domain]: geoData };
-      await chrome.storage.local.set({ trackerGeoCache: updatedCache });
-      
-      return geoData;
-    }
-  } catch (err) {
-    console.warn(`[Geo-IP] Failed to resolve ${domain}:`, err);
-  }
-  return null;
-}
 
 async function recordBlockEvent(count, siteDomain, trackerDomain = null, resourceType = 'script') {
   if (count <= 0) return;
@@ -285,18 +240,6 @@ async function recordBlockEvent(count, siteDomain, trackerDomain = null, resourc
       currentSiteStats.trackerNames = [...new Set([...(currentSiteStats.trackerNames || []), trackerDomain])];
     }
     
-    // 5. Update Geo-Map data
-    const domainToResolve = trackerDomain || siteDomain;
-    const geo = await resolveTrackerGeo(domainToResolve);
-    if (geo) {
-      stats.geoTrackers = stats.geoTrackers || [];
-      const existing = stats.geoTrackers.find(t => t.domain === domainToResolve);
-      if (!existing) {
-        stats.geoTrackers.push({ domain: domainToResolve, ...geo, type: category });
-        if (stats.geoTrackers.length > 50) stats.geoTrackers.shift();
-      }
-    }
-
     await chrome.storage.local.set({ 
       dashboardStats: stats, 
       activityLog: updatedLog,
@@ -466,8 +409,8 @@ const DANGEROUS_POOL = [
   'Microphone/Camera', 'Health Data', 'Purchase History'
 ];
 
-// Random Forest Model Simulation Logic
-function predictPrivacyRiskRandomForest(data) {
+// Rule-Based Risk Engine (Deterministic heuristics - not ML)
+function evaluateRiskRuleEngine(data) {
   const {
     cookieCount = 0,
     thirdPartyTrackers = 0,
@@ -476,7 +419,7 @@ function predictPrivacyRiskRandomForest(data) {
     fingerprintingSignals = false
   } = data;
 
-  // 1. Simulate Decision Trees
+  // 1. Evaluate Rule Conditions
   let riskScore = 0;
   let riskFactors = [];
 
@@ -509,12 +452,11 @@ function predictPrivacyRiskRandomForest(data) {
 
   // 2. Determine Predicted Risk Level & Confidence
   let predictedRiskLevel = "Safe";
-  // EXACT CONFIDENCE: Based on data density and connection security
   let baseConfidence = 90;
   if (!isHttps) baseConfidence += 5;
   if (thirdPartyTrackers > 10) baseConfidence += 4;
   let confidenceScore = Math.min(99.9, baseConfidence); 
-  
+
   if (riskScore >= 60) {
     predictedRiskLevel = "High";
   } else if (riskScore >= 30) {
@@ -526,10 +468,10 @@ function predictPrivacyRiskRandomForest(data) {
     riskFactors.push("Minor tracking mechanisms found.");
   }
 
-  // 3. Generate Simple Explanation
-  let explanation = `The AI model predicts a ${predictedRiskLevel} risk level. `;
+  // 3. Generate Simple Rule Explanation
+  let explanation = `The rule engine evaluated a ${predictedRiskLevel} risk level. `;
   if (riskFactors.length > 0) {
-    explanation += `This is primarily due to: ${riskFactors[0].toLowerCase()}`;
+    explanation += `Primary factor: ${riskFactors[0].toLowerCase()}`;
   } else {
     explanation += "No major privacy threats were detected.";
   }
@@ -681,8 +623,8 @@ async function analyzeDomain(tabId, url) {
       dataSharing: isDataHeavy 
     });
 
-    // Run the Precision Random Forest Model
-    let rfPrediction = predictPrivacyRiskRandomForest({
+    // Run Rule-Based Risk Engine
+    let rfPrediction = evaluateRiskRuleEngine({
       cookieCount: cookies.length,
       thirdPartyTrackers: trackersFound,
       permissions: [], 
@@ -921,7 +863,11 @@ async function enableShadowShield() {
       id: index + 1,
       priority: 1,
       action: { type: 'block' },
-      condition: { urlFilter: `*${domain}*`, resourceTypes }
+      condition: {
+        urlFilter: `||${domain}^`,
+        resourceTypes,
+        domainType: 'thirdParty'
+      }
     };
     if (whitelistedSites.length > 0) {
       rule.condition.excludedInitiatorDomains = whitelistedSites;
@@ -936,7 +882,7 @@ async function enableShadowShield() {
     addRules: rules
   });
 
-  console.log(`[DataShadow] SHADOW SHIELD ACTIVE: ${rules.length} tracker domains blocked.`);
+  console.log(`[ScamLens] SHIELD ACTIVE: ${rules.length} domain-anchored tracker rules enforced.`);
 }
 
 async function disableShadowShield() {
@@ -944,7 +890,7 @@ async function disableShadowShield() {
   await chrome.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: allIds
   });
-  console.log("[DataShadow] SHADOW SHIELD DISABLED.");
+  console.log("[ScamLens] SHIELD DISABLED.");
 }
 
 // THE PRIVACY NUKE: Deep cleaning of all site artifacts

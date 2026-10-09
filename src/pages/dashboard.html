@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DataShadow — Value Dashboard</title>
-  <meta name="description" content="See exactly how DataShadow protects your privacy — trackers blocked, data saved, and global threat map.">
+  <title>ScamLens — Security & Privacy Dashboard</title>
+  <meta name="description" content="See exactly how ScamLens protects your safety and privacy.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../lib/leaflet.css" />
-  <script src="../lib/leaflet.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -503,8 +501,8 @@
     <div class="dash-header animate-in">
       <div>
         <div class="dash-logo" style="display:flex; align-items:center; gap:10px;">
-          <img src="../../public/icon128.png" alt="DataShadow Logo" style="width:32px; height:32px; filter: drop-shadow(0 0 8px rgba(255,51,51,0.3));">
-          <div><span class="data">Data</span><span class="shadow">Shadow</span></div>
+          <img src="../../public/icon128.png" alt="ScamLens Logo" style="width:32px; height:32px; filter: drop-shadow(0 0 8px rgba(255,51,51,0.3));">
+          <div><span class="data">Scam</span><span class="shadow">Lens</span></div>
         </div>
         <div class="dash-badge">
           <span class="badge-dot"></span>
@@ -514,17 +512,9 @@
       <div style="display: flex; align-items: center; gap: 20px;">
         <div class="dash-nav">
           <a href="#" class="active" id="nav-dashboard">Dashboard</a>
-          <a href="#" id="nav-pro">Pro <span class="pro-tag">NEW</span></a>
           <a href="#" id="nav-whatif">What-If</a>
           <a href="#" id="nav-report">Full Report</a>
           <a href="#" id="nav-history">History</a>
-        </div>
-        <div class="user-profile" id="user-profile" style="display: none; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-          <div id="user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: white;">U</div>
-          <div style="display: flex; flex-direction: column;">
-            <span id="user-email" style="font-size: 12px; font-weight: 600; color: #fff;">user@example.com</span>
-            <span id="logout-btn" style="font-size: 10px; color: var(--sub); cursor: pointer; text-decoration: underline;">Sign Out</span>
-          </div>
         </div>
       </div>
     </div>
