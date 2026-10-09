@@ -640,14 +640,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  const geminiModelSelect = document.getElementById('gemini-model-select');
+
   // ── Settings Drawer ──
   if (btnSettings && settingsDrawer) {
     btnSettings.onclick = () => {
       if (hasChromeStorage()) {
-        chrome.storage.local.get(['backendUrl', 'sharedToken', 'geminiApiKey'], (d) => {
+        chrome.storage.local.get(['backendUrl', 'sharedToken', 'geminiApiKey', 'selectedAiModel'], (d) => {
           if (backendUrlInput) backendUrlInput.value = d.backendUrl || '';
           if (sharedTokenInput) sharedTokenInput.value = d.sharedToken || '';
           if (geminiKeyInput) geminiKeyInput.value = d.geminiApiKey || '';
+          if (geminiModelSelect) geminiModelSelect.value = d.selectedAiModel || 'gemini-1.5-flash';
         });
       }
       settingsDrawer.style.display = 'flex';
@@ -659,10 +662,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = {
           backendUrl: (backendUrlInput ? backendUrlInput.value : '').trim(),
           sharedToken: (sharedTokenInput ? sharedTokenInput.value : '').trim(),
-          geminiApiKey: (geminiKeyInput ? geminiKeyInput.value : '').trim()
+          geminiApiKey: (geminiKeyInput ? geminiKeyInput.value : '').trim(),
+          selectedAiModel: (geminiModelSelect ? geminiModelSelect.value : 'gemini-1.5-flash')
         };
-        if (hasChromeStorage()) chrome.storage.local.set(data, () => { settingsDrawer.style.display = 'none'; showToast('Settings saved!'); });
-        else { settingsDrawer.style.display = 'none'; showToast('Settings saved!'); }
+        if (hasChromeStorage()) chrome.storage.local.set(data, () => { settingsDrawer.style.display = 'none'; showToast('Settings & AI Model saved!'); });
+        else { settingsDrawer.style.display = 'none'; showToast('Settings & AI Model saved!'); }
+      };
+    }
+
+    if (btnTestBackend) {
+      btnTestBackend.onclick = async () => {
+        const url = (backendUrlInput ? backendUrlInput.value : '').trim() || 'http://localhost:3000/api/check';
+        const token = (sharedTokenInput ? sharedTokenInput.value : '').trim() || 'scamlens-demo-token';
+        const apiKey = (geminiKeyInput ? geminiKeyInput.value : '').trim();
+        const model = (geminiModelSelect ? geminiModelSelect.value : 'gemini-1.5-flash');
+
+        if (backendStatusMsg) {
+          backendStatusMsg.style.display = 'block';
+          backendStatusMsg.style.background = 'rgba(56,189,248,0.15)';
+          backendStatusMsg.style.color = '#38bdf8';
+          backendStatusMsg.textContent = `Testing ${model} on ${url}...`;
+        }
+
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ domain: 'google.com', verdict: 'Safe', score: 0, signals: [], geminiApiKey: apiKey, model })
+          });
+          const data = await res.json();
+          if (res.ok && data) {
+            if (backendStatusMsg) {
+              backendStatusMsg.style.background = 'rgba(16,185,129,0.2)';
+              backendStatusMsg.style.color = '#34d399';
+              backendStatusMsg.textContent = `✓ Backend Connected (${data.source || model})`;
+            }
+          } else {
+            throw new Error(data.error || `HTTP ${res.status}`);
+          }
+        } catch (e) {
+          if (backendStatusMsg) {
+            backendStatusMsg.style.background = 'rgba(239,68,68,0.2)';
+            backendStatusMsg.style.color = '#f87171';
+            backendStatusMsg.textContent = `✕ Connection failed: ${e.message}`;
+          }
+        }
       };
     }
   }

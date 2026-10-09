@@ -46,9 +46,12 @@ function getTemplateAdvice(verdict, score, evidence) {
   };
 }
 
-async function explainWithGemini(domain, verdict, score, signals, apiKey) {
+async function explainWithGemini(domain, verdict, score, signals, apiKey, requestedModel = 'gemini-1.5-flash') {
   const key = apiKey || GEMINI_API_KEY;
   if (!key) return null;
+
+  const modelsToTry = [requestedModel, 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+  const uniqueModels = Array.from(new Set(modelsToTry));
 
   const prompt = `You are ScamLens, a protective cybersecurity assistant.
 Analyze this web inspection result and provide a plain-language, empathetic explanation:
@@ -61,51 +64,58 @@ Format your response strictly as valid JSON with keys:
 - "plainExplanation": 1-2 sentence plain-language summary suitable for non-technical users.
 - "advice": 1 concise sentence of actionable advice.`;
 
-  return new Promise((resolve) => {
-    const postData = JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 200,
-        responseMimeType: 'application/json'
-      }
-    });
-
-    const req = https.request({
-      hostname: 'generativelanguage.googleapis.com',
-      path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      }
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(data);
-          const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            const parsed = JSON.parse(rawText);
-            if (parsed.plainExplanation) {
-              return resolve({
-                plainExplanation: parsed.plainExplanation,
-                advice: parsed.advice || 'Verify domain origin before entering credentials.',
-                source: 'gemini'
-              });
-            }
-          }
-        } catch (e) {}
-        resolve(null);
+  for (const model of uniqueModels) {
+    const result = await new Promise((resolve) => {
+      const postData = JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 250,
+          responseMimeType: 'application/json'
+        }
       });
+
+      const req = https.request({
+        hostname: 'generativelanguage.googleapis.com',
+        path: `/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${key}`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              const parsed = JSON.parse(rawText);
+              if (parsed.plainExplanation) {
+                return resolve({
+                  plainExplanation: parsed.plainExplanation,
+                  advice: parsed.advice || 'Verify domain origin before entering credentials.',
+                  source: `gemini (${model})`,
+                  model
+                });
+              }
+            }
+          } catch (e) {}
+          resolve(null);
+        });
+      });
+
+      req.on('error', () => resolve(null));
+      req.setTimeout(3500, () => { req.destroy(); resolve(null); });
+      req.write(postData);
+      req.end();
     });
 
-    req.on('error', () => resolve(null));
-    req.setTimeout(3500, () => { req.destroy(); resolve(null); });
-    req.write(postData);
-    req.end();
-  });
+    if (result) return result;
+  }
+
+  return null;
 }
 
 export default async function handler(req, res) {
