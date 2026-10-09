@@ -1,457 +1,316 @@
-// DataShadow Content Script - Handles the Red Alert Overlay
+/**
+ * ScamLens Content Script (content.js)
+ * 
+ * Collects page signals for the rules engine:
+ * 1. Forms with password or payment fields
+ * 2. Form submission targets (detecting cross-domain posts)
+ * 3. High-pressure urgency / OTP / security alert phrases
+ * 
+ * Injects non-intrusive warning banners for Dangerous sites using Shadow DOM.
+ * Strict XSS prevention: Uses textContent exclusively for dynamic text.
+ */
 
-// Notify background that we are ready to receive data
-chrome.runtime.sendMessage({ type: 'CONTENT_SCRIPT_READY' });
+// ── Target Urgency / Phishing Phrases ──
+const URGENCY_PATTERNS = [
+  /\bverify\s+(your\s+)?account\b/i,
+  /\burgent\s+action\b/i,
+  /\bimmediate\s+action\b/i,
+  /\baccount\s+(suspended|blocked|locked|terminated)\b/i,
+  /\bsecurity\s+alert\b/i,
+  /\bunauthorized\s+access\b/i,
+  /\bone-time\s+password\b/i,
+  /\botp\s*(verification|required)?\b/i,
+  /\benter\s+otp\b/i,
+  /\bpayment\s+failed\b/i,
+  /\bupdate\s+billing\b/i,
+  /\bconfirm\s+identity\b/i,
+  /\bkyc\s+update\b/i,
+  /\bpan\s+verification\b/i,
+  /\baadhaar\s+verify\b/i,
+  /\bclaim\s+reward\b/i,
+  /\blimited\s+time\b/i
+];
 
-// Track dismissed sites for this session
-const dismissedSites = new Set();
+/**
+ * Collects form inputs and destination targets
+ * @returns {{ passwordForm: boolean, formTargetHost: string | null }}
+ */
+function collectFormSignals() {
+  const forms = document.querySelectorAll('form');
+  let passwordForm = false;
+  let formTargetHost = null;
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'DATA_SHADOW_ANALYSIS') {
-    const { riskLevel, cookieCount, dangerousFields, trackerNames, domain, riskClassification } = message.data;
+  for (const form of forms) {
+    const hasPassword = form.querySelector('input[type="password"]');
+    const hasPayment = form.querySelector('input[name*="card" i], input[name*="cvv" i], input[autocomplete*="cc-" i], input[id*="card" i], input[id*="cvv" i]');
 
-    // Don't show if already dismissed this session
-    if (dismissedSites.has(domain)) return;
+    if (hasPassword || hasPayment) {
+      passwordForm = true;
+      try {
+        const rawAction = form.getAttribute('action') || window.location.href;
+        const resolvedUrl = new URL(rawAction, window.location.href);
+        formTargetHost = resolvedUrl.hostname.toLowerCase();
+      } catch (e) {
+        formTargetHost = window.location.hostname.toLowerCase();
+      }
+      break;
+    }
+  }
 
-    // Check shield state — if ON, show "Protected" instead of Red Alert
-    chrome.storage.local.get('shieldActive', (data) => {
-      if (data.shieldActive) {
-        showProtectedBadge();
-      } else if (riskLevel === 'HIGH' || riskLevel === 'MEDIUM' || (riskClassification && riskClassification.risk_label !== 'Safe')) {
-        showDynamicAlert(cookieCount, dangerousFields, trackerNames, domain, riskClassification);
+  // Fallback: Check inputs not enclosed in <form>
+  if (!passwordForm) {
+    const loosePassword = document.querySelector('input[type="password"]');
+    if (loosePassword) {
+      passwordForm = true;
+      formTargetHost = window.location.hostname.toLowerCase();
+    }
+  }
+
+  return { passwordForm, formTargetHost };
+}
+
+/**
+ * Scans visible page text for psychological urgency patterns
+ * @returns {string[]}
+ */
+function collectKeywordSignals() {
+  const bodyText = (document.body ? document.body.innerText : '') || '';
+  const sample = bodyText.slice(0, 40000);
+  const hits = [];
+
+  for (const pattern of URGENCY_PATTERNS) {
+    const match = sample.match(pattern);
+    if (match) {
+      hits.push(match[0].toLowerCase());
+    }
+  }
+
+  return [...new Set(hits)];
+}
+
+/**
+ * Transmits collected page signals to background worker
+ */
+function sendPageSignals() {
+  if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) return;
+
+  try {
+    const forms = collectFormSignals();
+    const keywords = collectKeywordSignals();
+
+    chrome.runtime.sendMessage({
+      type: 'PAGE_SIGNALS',
+      url: window.location.href,
+      pageSignals: {
+        passwordForm: forms.passwordForm,
+        formTargetHost: forms.formTargetHost,
+        keywordHits: keywords
       }
     });
+  } catch (err) {
+    // Context invalidated on extension reload
+  }
+}
+
+// ── In-Page Dangerous Threat Banner (Shadow DOM) ──
+function showDangerousWarning(analysis) {
+  if (document.getElementById('scamlens-warning-container')) return;
+
+  const container = document.createElement('div');
+  container.id = 'scamlens-warning-container';
+
+  const shadow = container.attachShadow({ mode: 'closed' });
+
+  // Stylesheet
+  const style = document.createElement('style');
+  style.textContent = `
+    .sl-banner {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      max-width: 420px;
+      background: #180909;
+      color: #ffffff;
+      border: 1px solid #ef4444;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.7), 0 0 20px rgba(239,68,68,0.25);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      z-index: 2147483647;
+      animation: slSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slSlideDown {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .sl-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .sl-badge {
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .sl-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #fca5a5;
+    }
+    .sl-close {
+      margin-left: auto;
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .sl-close:hover { color: #ffffff; background: rgba(255,255,255,0.1); }
+    .sl-body {
+      color: #e5e7eb;
+      margin-bottom: 12px;
+      font-size: 12.5px;
+    }
+    .sl-evidence {
+      background: rgba(255,255,255,0.05);
+      border-left: 3px solid #ef4444;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      color: #fecaca;
+      margin-bottom: 12px;
+    }
+    .sl-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .sl-btn-leave {
+      flex: 1;
+      background: #ef4444;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .sl-btn-leave:hover { background: #dc2626; }
+    .sl-btn-dismiss {
+      background: rgba(255,255,255,0.1);
+      color: #d1d5db;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .sl-btn-dismiss:hover { background: rgba(255,255,255,0.18); color: #ffffff; }
+  `;
+  shadow.appendChild(style);
+
+  // Card Structure built safely using DOM nodes and textContent
+  const banner = document.createElement('div');
+  banner.className = 'sl-banner';
+  banner.setAttribute('role', 'alert');
+
+  const header = document.createElement('div');
+  header.className = 'sl-header';
+
+  const badge = document.createElement('span');
+  badge.className = 'sl-badge';
+  badge.textContent = 'DANGEROUS';
+
+  const title = document.createElement('span');
+  title.className = 'sl-title';
+  title.textContent = 'ScamLens Threat Alert';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'sl-close';
+  closeBtn.setAttribute('aria-label', 'Dismiss alert');
+  closeBtn.textContent = '×';
+  closeBtn.onclick = () => container.remove();
+
+  header.appendChild(badge);
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+  banner.appendChild(header);
+
+  const body = document.createElement('div');
+  body.className = 'sl-body';
+  body.textContent = analysis.explanation || 'This website displays deceptive indicators consistent with credential harvesting or scam activity.';
+  banner.appendChild(body);
+
+  if (analysis.evidence && analysis.evidence.length > 0) {
+    const evidence = document.createElement('div');
+    evidence.className = 'sl-evidence';
+    evidence.textContent = `Evidence: ${analysis.evidence[0]}`;
+    banner.appendChild(evidence);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'sl-actions';
+
+  const leaveBtn = document.createElement('button');
+  leaveBtn.className = 'sl-btn-leave';
+  leaveBtn.textContent = 'Leave This Site (Safe)';
+  leaveBtn.onclick = () => {
+    window.location.href = 'about:blank';
+  };
+
+  const dismissBtn = document.createElement('button');
+  dismissBtn.className = 'sl-btn-dismiss';
+  dismissBtn.textContent = 'Ignore Warning';
+  dismissBtn.onclick = () => container.remove();
+
+  actions.appendChild(leaveBtn);
+  actions.appendChild(dismissBtn);
+  banner.appendChild(actions);
+
+  shadow.appendChild(banner);
+  (document.body || document.documentElement).appendChild(container);
+}
+
+// ── Message Listener from Background ──
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'SCAMLENS_VERDICT') {
+    if (message.data && message.data.verdict === 'Dangerous') {
+      showDangerousWarning(message.data);
+    }
   }
 });
 
-function scanForPrivacyPolicy() {
-  const links = document.querySelectorAll('a');
-  for (let link of links) {
-    const text = link.innerText.toLowerCase();
-    if (text.includes('privacy') || text.includes('policy')) {
-      return link.href;
-    }
-  }
-  return null;
+// ── Execution Entry Point ──
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    sendPageSignals();
+  });
+} else {
+  sendPageSignals();
 }
 
-function showProtectedBadge() {
-  if (document.getElementById('datashadow-alert-container')) return;
-
-  const container = document.createElement('div');
-  container.id = 'datashadow-alert-container';
-  
-  const shadow = container.attachShadow({ mode: 'closed' });
-  const wrapper = document.createElement('div');
-  
-  wrapper.innerHTML = `
-    <style>
-      .ds-shield-panel {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(10, 15, 25, 0.95);
-        color: #e2e8f0;
-        padding: 14px 18px;
-        border-radius: 14px;
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        font-size: 13px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-        z-index: 2147483647;
-        border: 1px solid rgba(0,255,136,0.25);
-        backdrop-filter: blur(12px);
-        animation: slideUp 0.4s ease-out;
-        min-width: 240px;
-      }
-      @keyframes slideUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to   { opacity: 1; transform: translateY(0); }
-      }
-      .ds-shield-header {
-        display: flex; align-items: center; gap: 8px;
-        margin-bottom: 12px; font-weight: 700; font-size: 14px;
-        color: #00ff88;
-      }
-      .ds-shield-dot {
-        width: 8px; height: 8px; border-radius: 50%;
-        background: #00ff88;
-        box-shadow: 0 0 8px rgba(0,255,136,0.6);
-        animation: pulse 2s ease-in-out infinite;
-      }
-      @keyframes pulse {
-        0%,100% { opacity:1; transform:scale(1); }
-        50% { opacity:0.5; transform:scale(1.3); }
-      }
-      .ds-shield-info {
-        font-size: 11px; color: #94a3b8;
-        margin-bottom: 12px; line-height: 1.5;
-      }
-      .ds-shield-btns {
-        display: flex; gap: 8px;
-      }
-      .ds-shield-btns button {
-        flex: 1;
-        padding: 7px 10px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        font-weight: 700;
-        font-size: 11px;
-        transition: all 0.2s;
-        font-family: inherit;
-      }
-      .ds-btn-report {
-        background: #ff3333; color: #fff;
-      }
-      .ds-btn-report:hover { background: #ff4444; box-shadow: 0 0 12px rgba(255,51,51,0.3); }
-      .ds-btn-dash {
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
-        color: #38bdf8;
-        border: 1px solid rgba(56,189,248,0.3) !important;
-      }
-      .ds-btn-dash:hover { border-color: rgba(56,189,248,0.6) !important; box-shadow: 0 0 12px rgba(56,189,248,0.2); }
-      .ds-btn-pro {
-        display: block; width: 100%; margin-top: 8px;
-        padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(167,139,250,0.3);
-        background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(56,189,248,0.15));
-        color: #a78bfa; font-weight: 700; font-size: 11px; cursor: pointer;
-        transition: all 0.2s; font-family: inherit;
-      }
-      .ds-btn-pro:hover { box-shadow: 0 0 12px rgba(167,139,250,0.2); }
-      .ds-dismiss {
-        position: absolute; top: 8px; right: 10px;
-        background: none; border: none;
-        color: #475569; cursor: pointer;
-        font-size: 16px; line-height: 1;
-      }
-      .ds-dismiss:hover { color: #94a3b8; }
-    </style>
-    <div class="ds-shield-panel">
-      <button class="ds-dismiss" id="ds-close">×</button>
-      <div class="ds-shield-header">
-        <span class="ds-shield-dot"></span>
-        🛡️ Shadow Shield Active
-      </div>
-      <div class="ds-shield-info">
-        Blocking trackers from <strong>50 domains</strong>. Your browsing is protected.
-      </div>
-      <div class="ds-shield-btns">
-        <button class="ds-btn-report" id="ds-report">Full Report →</button>
-        <button class="ds-btn-dash" id="ds-dash">📊 Dashboard</button>
-      </div>
-      <button class="ds-btn-pro" id="ds-pro">⚡ Pro Features</button>
-    </div>
-  `;
-  
-  shadow.appendChild(wrapper);
-  document.body.appendChild(container);
-
-  shadow.getElementById('ds-close').onclick = () => container.remove();
-
-  shadow.getElementById('ds-report').onclick = () => {
-    const a = document.createElement('a');
-    a.href = chrome.runtime.getURL('src/pages/report.html');
-    a.target = '_blank'; a.rel = 'noopener'; a.style.display = 'none';
-    document.body.appendChild(a); a.click(); a.remove();
-  };
-
-  shadow.getElementById('ds-dash').onclick = () => {
-    const a = document.createElement('a');
-    a.href = chrome.runtime.getURL('src/pages/dashboard.html');
-    a.target = '_blank'; a.rel = 'noopener'; a.style.display = 'none';
-    document.body.appendChild(a); a.click(); a.remove();
-  };
-
-  shadow.getElementById('ds-pro').onclick = () => {
-    const a = document.createElement('a');
-    a.href = chrome.runtime.getURL('src/pages/pro.html');
-    a.target = '_blank'; a.rel = 'noopener'; a.style.display = 'none';
-    document.body.appendChild(a); a.click(); a.remove();
-  };
-
-  // Auto-hide after 15 seconds
-  setTimeout(() => container.remove(), 15000);
-}
-
-function showDynamicAlert(count, fields, names, domain, classification) {
-  const policyUrl = scanForPrivacyPolicy();
-  
-  if (document.getElementById('datashadow-alert-container')) return;
-
-  const container = document.createElement('div');
-  container.id = 'datashadow-alert-container';
-  
-  const shadow = container.attachShadow({ mode: 'closed' });
-  const wrapper = document.createElement('div');
-  wrapper.className = 'ds-alert-wrapper';
-  
-  const alertText = fields.length > 0 ? fields.join(', ') : 'Minor tracking mechanisms';
-  const trackerList = names && names.length > 0 
-    ? `<div style="font-size: 10px; margin-top: 5px; opacity: 0.8;">Examples: ${names.join(', ')}</div>` 
-    : '';
-  const policyStatus = policyUrl 
-    ? `<span style="color: #00ff88;">✅ Privacy Policy Detected</span>` 
-    : `<span style="color: #ff9999;">⚠️ No Privacy Policy Found!</span>`;
-
-  // Fallback defaults if classification is missing
-  let title = "RED ALERT";
-  let alertMsg = "Your privacy is being compromised in short.";
-  let bgColor = "rgba(180, 0, 0, 0.95)";
-  let icon = "⚠️";
-  let threatHtml = "";
-
-  if (classification) {
-    title = classification.risk_label.toUpperCase();
-    alertMsg = classification.alert_message;
-    
-    if (classification.visual_indicator === 'yellow') {
-      bgColor = "rgba(200, 140, 0, 0.95)";
-      icon = "👀";
-    } else if (classification.visual_indicator === 'green') {
-      bgColor = "rgba(0, 120, 50, 0.95)";
-      icon = "✅";
-    } else {
-      bgColor = "rgba(180, 0, 0, 0.95)";
-      icon = "🚨";
-    }
-
-    if (classification.threat_types.length > 0) {
-      threatHtml = `<div style="margin-top: 6px; font-size: 11px; font-style: italic; color: #ffcccc;">Threats: ${classification.threat_types.join(', ')}</div>`;
-    }
+// Observe dynamic DOM changes (e.g. login modal dynamically added)
+const observer = new MutationObserver(() => {
+  const forms = collectFormSignals();
+  if (forms.passwordForm) {
+    sendPageSignals();
+    observer.disconnect(); // Once detected, stop observer
   }
-  
-  wrapper.innerHTML = `
-    <style>
-      .ds-alert-wrapper {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        width: 320px;
-        background: ${bgColor};
-        color: white;
-        padding: 16px;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        z-index: 2147483647;
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.2);
-        animation: slideIn 0.5s ease-out;
-      }
-      @keyframes slideIn {
-        from { transform: translateX(120%); }
-        to { transform: translateX(0); }
-      }
-      .ds-header {
-        font-weight: bold;
-        font-size: 18px;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-      }
-      .ds-warning-icon { margin-right: 8px; font-size: 20px; }
-      .ds-body { font-size: 14px; line-height: 1.4; opacity: 0.9; }
-      .ds-policy { margin-top: 8px; font-size: 12px; font-weight: bold; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
-      .ds-fields { 
-        margin: 10px 0; 
-        font-weight: bold; 
-        color: #ffcccc;
-        background: rgba(0,0,0,0.2);
-        padding: 4px 8px;
-        border-radius: 4px;
-      }
-      .ds-footer {
-        margin-top: 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .ds-btn-nav {
-        background: white;
-        color: #333;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-        font-size: 12px;
-        transition: 0.2s;
-      }
-      .ds-btn-nav:hover { background: #eee; }
-      .ds-close {
-        cursor: pointer;
-        font-size: 12px;
-        text-decoration: underline;
-        opacity: 0.7;
-      }
-    </style>
-    <div class="ds-header">
-      <span class="ds-warning-icon">${icon}</span> ${title}
-    </div>
-    <div class="ds-body">
-      ${alertMsg}
-      <br><br>
-      Accessing <b>${count} shadow trackers</b>. 
-      <div class="ds-fields">Data fields: ${alertText}</div>
-      ${threatHtml}
-      ${trackerList}
-      <div class="ds-policy">${policyStatus}</div>
-    </div>
+});
 
-    <div class="ds-shield-row">
-      <span>🛡️ Shadow Shield</span>
-      <button class="ds-shield-toggle" id="shield-toggle-btn">OFF</button>
-    </div>
-
-    <div class="ds-footer">
-      <span class="ds-close" id="close-ds">Dismiss</span>
-      <button class="ds-btn-block" id="block-ds">Block & Clean 🛡️</button>
-      <button class="ds-btn-nav" id="nav-ds">Full Report →</button>
-    </div>
-    <button class="ds-btn-dashboard" id="dash-ds">📊 Value Dashboard</button>
-    <button class="ds-btn-pro-alert" id="pro-ds">⚡ Pro Features</button>
-  `;
-
-  shadow.appendChild(wrapper);
-  document.body.appendChild(container);
-
-  // Style update for the new button
-  const style = shadow.querySelector('style');
-  style.textContent += `
-    .ds-btn-block {
-      background: #00ff88;
-      color: #004422;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 11px;
-      transition: 0.2s;
-    }
-    .ds-btn-block:hover { background: #00cc6e; transform: scale(1.05); }
-    .ds-btn-nav { font-size: 11px; padding: 6px 8px; }
-    .ds-btn-dashboard {
-      display: block;
-      width: 100%;
-      margin-top: 10px;
-      padding: 8px 0;
-      background: linear-gradient(135deg, #1a1a2e, #16213e);
-      color: #38bdf8;
-      border: 1px solid rgba(56,189,248,0.3);
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 12px;
-      transition: 0.2s;
-      text-align: center;
-    }
-    .ds-btn-dashboard:hover {
-      background: linear-gradient(135deg, #16213e, #0f3460);
-      border-color: rgba(56,189,248,0.6);
-      box-shadow: 0 0 12px rgba(56,189,248,0.2);
-    }
-    .ds-btn-pro-alert {
-      display: block; width: 100%; margin-top: 8px; padding: 8px 0;
-      background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(56,189,248,0.15));
-      color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); border-radius: 8px;
-      cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; text-align: center;
-    }
-    .ds-btn-pro-alert:hover { box-shadow: 0 0 12px rgba(167,139,250,0.2); }
-    .ds-shield-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 10px 0;
-      padding: 8px 10px;
-      background: rgba(0,0,0,0.25);
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: bold;
-    }
-    .ds-shield-toggle {
-      background: #555;
-      color: #ccc;
-      border: none;
-      padding: 4px 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 12px;
-      transition: 0.3s;
-    }
-    .ds-shield-toggle.on {
-      background: #00ff88;
-      color: #004422;
-      box-shadow: 0 0 8px rgba(0,255,136,0.6);
-    }
-  `;
-
-  shadow.getElementById('close-ds').onclick = () => {
-    if (domain) dismissedSites.add(domain);
-    container.remove();
-  };
-  
-  // Shadow Shield Toggle inside Red Alert
-  const shieldToggle = shadow.getElementById('shield-toggle-btn');
-  shieldToggle.onclick = () => {
-    const isOn = shieldToggle.classList.toggle('on');
-    shieldToggle.innerText = isOn ? 'ON ✅' : 'OFF';
-    chrome.storage.local.set({ shieldActive: isOn });
-    chrome.runtime.sendMessage({ type: isOn ? 'ENABLE_SHIELD' : 'DISABLE_SHIELD' });
-    if (isOn) {
-      setTimeout(() => {
-        if (domain) dismissedSites.add(domain);
-        container.remove();
-        showProtectedBadge();
-      }, 500);
-    }
-  };
-
-  shadow.getElementById('block-ds').onclick = () => {
-    chrome.runtime.sendMessage({ type: 'BLOCK_COOKIES', domain: window.location.hostname });
-    if (domain) dismissedSites.add(domain);
-    shadow.querySelector('.ds-btn-block').innerText = 'NUKED! ✅';
-    shadow.querySelector('.ds-btn-block').style.background = '#888';
-    shadow.querySelector('.ds-btn-block').disabled = true;
-    setTimeout(() => container.remove(), 1500);
-  };
-
-  shadow.getElementById('nav-ds').onclick = () => {
-    const reportUrl = chrome.runtime.getURL('src/pages/report.html');
-    const a = document.createElement('a');
-    a.href = reportUrl;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
-  // Value Dashboard button
-  shadow.getElementById('dash-ds').onclick = () => {
-    const dashUrl = chrome.runtime.getURL('src/pages/dashboard.html');
-    const a = document.createElement('a');
-    a.href = dashUrl;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
-  // Pro Features button
-  shadow.getElementById('pro-ds').onclick = () => {
-    const proUrl = chrome.runtime.getURL('src/pages/pro.html');
-    const a = document.createElement('a');
-    a.href = proUrl;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
+if (document.body) {
+  observer.observe(document.body, { childList: true, subtree: true });
 }

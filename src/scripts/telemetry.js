@@ -60,6 +60,12 @@ const TelemetryProcessor = {
 };
 
 // Export if in module context, otherwise keep global
+if (typeof self !== 'undefined') {
+  self.TelemetryProcessor = TelemetryProcessor;
+}
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = TelemetryProcessor;
 }
+
+export { TelemetryProcessor };
+export default TelemetryProcessor;

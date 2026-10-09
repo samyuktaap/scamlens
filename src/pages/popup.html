@@ -1,142 +1,430 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScamLens</title>
   <style>
-    body {
-      width: 300px;
-      padding: 16px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #121212;
-      color: white;
-      margin: 0;
+    :root {
+      --bg: #090a0f;
+      --card-bg: #12141c;
+      --border: rgba(255, 255, 255, 0.12);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --safe: #10b981;
+      --safe-bg: rgba(16, 185, 129, 0.12);
+      --warn: #f59e0b;
+      --warn-bg: rgba(245, 158, 11, 0.12);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.15);
+      --accent: #6366f1;
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 360px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.4;
+      font-size: 13px;
+    }
+
+    /* ── Focus Style (WCAG AA Compliance) ── */
+    :focus-visible {
+      outline: 2px solid #38bdf8;
+      outline-offset: 2px;
+    }
+
+    /* ── Header ── */
     .header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
     }
-    .logo { font-weight: bold; font-size: 20px; color: #ff3333; }
-    .status-card {
-      background: #1e1e1e;
-      border-radius: 12px;
-      padding: 15px;
-      text-align: center;
-      border: 1px solid #333;
-    }
-    .score { font-size: 48px; font-weight: bold; color: #ff3333; }
-    .label { font-size: 12px; color: #888; margin-top: 4px; }
-    .shield-box {
-      margin-top: 20px;
-      background: #1e1e1e;
-      border-radius: 12px;
-      padding: 12px 15px;
+    .brand {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      border: 1px solid #333;
+      gap: 8px;
     }
-    .toggle-btn {
-      background: #333;
-      color: #888;
-      border: none;
-      padding: 5px 15px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: 0.3s;
+    .brand-logo {
+      width: 22px;
+      height: 22px;
     }
-    .toggle-btn.active {
-      background: #00ff88;
-      color: #004422;
-      box-shadow: 0 0 10px rgba(0,255,136,0.5);
-    }
-    .footer-btn {
-      width: 100%;
-      background: #ff3333;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 8px;
-      margin-top: 15px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .nuke-btn {
-      width: 100%;
-      padding: 12px;
-      margin-top: 15px;
-      background: linear-gradient(135deg, #ff3333, #880000);
-      color: white;
-      border: none;
-      border-radius: 12px;
+    .brand-title {
       font-weight: 800;
-      font-size: 14px;
-      cursor: pointer;
+      font-size: 16px;
+      letter-spacing: -0.3px;
+      color: #ffffff;
+    }
+    .brand-title span {
+      color: #ef4444;
+    }
+    .offline-tag {
+      font-size: 10px;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      box-shadow: 0 4px 15px rgba(255, 51, 51, 0.4);
-      transition: 0.3s;
+      padding: 2px 7px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      color: #94a3b8;
+    }
+
+    /* ── Verdict Hero Card ── */
+    .verdict-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .verdict-card.state-safe {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: linear-gradient(180deg, var(--card-bg) 0%, var(--safe-bg) 100%);
+    }
+    .verdict-card.state-suspicious {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: linear-gradient(180deg, var(--card-bg) 0%, var(--warn-bg) 100%);
+    }
+    .verdict-card.state-dangerous {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: linear-gradient(180deg, var(--card-bg) 0%, var(--danger-bg) 100%);
+    }
+
+    .target-domain {
+      font-size: 12px;
+      color: var(--text-muted);
+      word-break: break-all;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .verdict-header {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
+      margin-bottom: 8px;
     }
-    .nuke-btn:hover {
-      transform: scale(1.02);
-      box-shadow: 0 6px 20px rgba(255, 51, 51, 0.6);
-      filter: brightness(1.2);
+    .verdict-icon {
+      font-size: 26px;
     }
-    .value-saved-container {
-      margin-top: 12px;
-      text-align: center;
-      font-size: 11px;
-      color: #888;
-      background: rgba(255,255,255,0.03);
-      padding: 6px;
+    .verdict-badge {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .state-safe .verdict-badge { color: var(--safe); }
+    .state-suspicious .verdict-badge { color: var(--warn); }
+    .state-dangerous .verdict-badge { color: var(--danger); }
+
+    .score-row {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .score-number {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .explanation-box {
+      font-size: 12.5px;
+      color: #e5e7eb;
+      text-align: left;
+      line-height: 1.45;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 10px 12px;
       border-radius: 8px;
+      border-left: 3px solid #64748b;
     }
-    .value-saved-container span {
-      color: #facc15;
-      font-weight: bold;
+    .state-safe .explanation-box { border-left-color: var(--safe); }
+    .state-suspicious .explanation-box { border-left-color: var(--warn); }
+    .state-dangerous .explanation-box { border-left-color: var(--danger); }
+
+    /* ── Sections ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin: 12px 0 6px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ── Evidence List ── */
+    .evidence-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .evidence-item {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11.5px;
+      color: #e2e8f0;
+      line-height: 1.4;
+    }
+    .evidence-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fca5a5;
+      margin-bottom: 3px;
+    }
+
+    /* ── Actionable Advice ── */
+    .advice-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .advice-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      color: #d1d5db;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 8px 10px;
+      border-radius: 8px;
+      border-left: 2px solid var(--accent);
+    }
+    .advice-icon {
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    /* ── Controls & Actions ── */
+    .btn-deep-check {
+      width: 100%;
+      background: #1e1b4b;
+      color: #c7d2fe;
+      border: 1px solid #4338ca;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      margin-bottom: 10px;
+    }
+    .btn-deep-check:hover:not(:disabled) {
+      background: #312e81;
+      color: #ffffff;
+      border-color: #6366f1;
+    }
+    .btn-deep-check:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .control-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .control-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+    .control-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .toggle-btn {
+      background: #334155;
+      color: #cbd5e1;
+      border: none;
+      padding: 4px 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .toggle-btn.active {
+      background: var(--safe);
+      color: #022c22;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-nuke {
+      width: 100%;
+      background: linear-gradient(135deg, #b91c1c, #7f1d1d);
+      color: #ffffff;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.2s ease;
+      margin-top: 4px;
+    }
+    .btn-nuke:hover {
+      filter: brightness(1.15);
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+    }
+
+    /* ── Footer ── */
+    .footer-links {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .footer-btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: #d1d5db;
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .footer-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
     }
   </style>
 </head>
 <body>
-  <div class="header" style="display:flex; align-items:center; gap:8px;">
-    <img src="../../public/icon128.png" alt="ScamLens Logo" style="width:24px; height:24px;">
-    <div class="logo">ScamLens</div>
-    <div class="version" style="margin-left:auto">v1.0</div>
-  </div>
-  <div class="status-card">
-    <div class="score" id="score">--</div>
-    <div class="label">SITE SECURITY & PRIVACY RISK</div>
-  </div>
 
-  <div class="shield-box">
-    <span>Shadow Shield</span>
-    <button class="toggle-btn" id="shield-toggle">OFF</button>
-  </div>
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">
+      <img src="../../public/icon128.png" alt="ScamLens" class="brand-logo">
+      <div class="brand-title">Scam<span>Lens</span></div>
+    </div>
+    <div class="offline-tag" id="mode-tag">Offline First</div>
+  </header>
 
-  <button class="nuke-btn" id="nuke-btn">
-    ☢️ Detonate Privacy Nuke
+  <!-- Verdict Hero Region (Screen Reader Accessible) -->
+  <section class="verdict-card state-safe" id="verdict-card" role="region" aria-live="polite" aria-label="Site Security Verdict">
+    <div class="target-domain" id="target-domain">Analyzing current tab...</div>
+    
+    <div class="verdict-header">
+      <span class="verdict-icon" id="verdict-icon" aria-hidden="true">🛡️</span>
+      <span class="verdict-badge" id="verdict-text">SAFE</span>
+    </div>
+
+    <div class="score-row">
+      <span>Threat Score:</span>
+      <span class="score-number" id="threat-score">0</span>
+      <span>/ 100</span>
+    </div>
+
+    <div class="explanation-box" id="explanation-text">
+      Scanning link destination and in-page form targets...
+    </div>
+  </section>
+
+  <!-- Evidence Section -->
+  <div class="section-title">
+    <span>Detection Evidence</span>
+    <span id="evidence-count">0 signals</span>
+  </div>
+  <ul class="evidence-list" id="evidence-list">
+    <li class="evidence-item" id="evidence-empty">No suspicious or malicious indicators triggered.</li>
+  </ul>
+
+  <!-- Actionable Advice Section -->
+  <div class="section-title">
+    <span>Recommended Action</span>
+  </div>
+  <ul class="advice-list" id="advice-list">
+    <!-- Populated safely via textContent -->
+  </ul>
+
+  <!-- Deep Check Action -->
+  <button class="btn-deep-check" id="btn-deep-check" type="button">
+    <span aria-hidden="true">🔍</span>
+    <span id="deep-check-label">Deep Check (DNS & RDAP)</span>
   </button>
 
-  <div class="value-saved-container">
-    💰 Data Market Value Saved: <span id="market-value-popup">$0.00</span>
-  </div>
-
-  <div class="shield-box" style="margin-top:10px; padding: 10px 15px; border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.02);">
+  <!-- Safety Shield Control -->
+  <div class="control-row">
     <div>
-      <div style="font-size:13px; font-weight:bold;">Allow on this site</div>
-      <div style="font-size:10px; color:#888; margin-top:2px;" id="current-domain">Checking...</div>
+      <div class="control-label">Tracker Shield</div>
+      <div class="control-sub">Blocks 50 known tracker networks</div>
     </div>
-    <button class="toggle-btn" id="whitelist-toggle" style="background:#444; color:#aaa; font-size:11px; padding:4px 12px;">OFF</button>
+    <button class="toggle-btn" id="shield-toggle" type="button" aria-pressed="false">OFF</button>
   </div>
 
-  <button class="footer-btn" id="analyze-btn">Full Analysis</button>
-  <button class="footer-btn" id="dashboard-btn" style="background:#1e1e1e;border:1px solid #333;color:#38bdf8;margin-top:8px">📊 Value Dashboard</button>
+  <!-- Whitelist Control -->
+  <div class="control-row">
+    <div>
+      <div class="control-label">Allow On This Site</div>
+      <div class="control-sub">Bypass tracker blocking for this domain</div>
+    </div>
+    <button class="toggle-btn" id="whitelist-toggle" type="button" aria-pressed="false">OFF</button>
+  </div>
+
+  <!-- Privacy Nuke -->
+  <button class="btn-nuke" id="btn-nuke" type="button">
+    ☢️ Clean Cookies & Storage
+  </button>
+
+  <!-- Footer Navigation -->
+  <footer class="footer-links">
+    <button class="footer-btn" id="btn-dashboard" type="button">📊 Dashboard</button>
+    <button class="footer-btn" id="btn-report" type="button">📄 Full Report</button>
+  </footer>
 
   <script src="popup.js"></script>
 </body>

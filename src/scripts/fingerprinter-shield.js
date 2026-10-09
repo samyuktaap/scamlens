@@ -3,7 +3,7 @@
     chrome.storage.local.get('shieldActive', (data) => {
         if (!data.shieldActive) return;
 
-        console.log("[DataShadow] Anti-Fingerprinting Shield Active.");
+        console.log("[ScamLens] Anti-Fingerprinting Shield Active.");
 
         // We inject the "noise" script directly into the page's execution environment
         const script = document.createElement('script');
