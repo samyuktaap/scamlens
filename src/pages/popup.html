@@ -367,7 +367,7 @@
     </div>
     <div class="header-actions">
       <div class="source-badge" id="mode-tag" style="margin:0;">Active Shield</div>
-      <button class="icon-btn" id="btn-settings" type="button" title="Backend & AI Settings">⚙️</button>
+      <button class="icon-btn" id="btn-settings" type="button" aria-label="Open Backend & AI Settings" title="Backend & AI Settings">⚙️</button>
     </div>
   </header>
 
@@ -375,7 +375,7 @@
   <div class="settings-drawer" id="settings-drawer" style="display: none;">
     <div class="settings-header">
       <div style="font-size:13px; font-weight:800; color:#fff;">⚙️ Backend & AI Settings</div>
-      <button class="icon-btn" id="btn-close-settings" type="button">✕</button>
+      <button class="icon-btn" id="btn-close-settings" type="button" aria-label="Close Settings Drawer">✕</button>
     </div>
     <div class="form-group">
       <label for="backend-url-input">Apps Script / Backend URL</label>
@@ -391,30 +391,30 @@
     </div>
     <div id="backend-status-msg" style="display:none; font-size:10.5px; padding:6px; border-radius:6px; margin-bottom:8px;"></div>
     <div class="settings-buttons">
-      <button type="button" id="btn-test-backend" class="btn-secondary">Test</button>
-      <button type="button" id="btn-save-settings" class="btn-primary">Save</button>
+      <button type="button" id="btn-test-backend" class="btn-secondary" aria-label="Test Backend Connection">Test</button>
+      <button type="button" id="btn-save-settings" class="btn-primary" aria-label="Save Settings">Save</button>
     </div>
   </div>
 
   <!-- In-Popup Multi-Tab Suite Navigation -->
   <nav class="feature-suite-nav" aria-label="Feature Tabs">
-    <button type="button" class="suite-tab active" id="tab-btn-scanner">
+    <button type="button" class="suite-tab active" id="tab-btn-scanner" aria-label="Scanner Tab">
       <span class="tab-icon">⚡</span>
       <span class="tab-text">Scanner</span>
     </button>
-    <button type="button" class="suite-tab" id="tab-btn-telemetry">
+    <button type="button" class="suite-tab" id="tab-btn-telemetry" aria-label="Telemetry Tab">
       <span class="tab-icon">📊</span>
       <span class="tab-text">Telemetry</span>
     </button>
-    <button type="button" class="suite-tab highlight" id="tab-btn-pro">
+    <button type="button" class="suite-tab highlight" id="tab-btn-pro" aria-label="Pro Systems Tab">
       <span class="tab-icon">⭐</span>
       <span class="tab-text">Pro</span>
     </button>
-    <button type="button" class="suite-tab" id="tab-btn-whatif">
+    <button type="button" class="suite-tab" id="tab-btn-whatif" aria-label="What-If Sandbox Tab">
       <span class="tab-icon">🧪</span>
       <span class="tab-text">What-If</span>
     </button>
-    <button type="button" class="suite-tab" id="tab-btn-history">
+    <button type="button" class="suite-tab" id="tab-btn-history" aria-label="History Log Tab">
       <span class="tab-icon">📜</span>
       <span class="tab-text">History</span>
     </button>

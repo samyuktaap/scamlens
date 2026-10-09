@@ -533,10 +533,10 @@ function renderTrackerMap(totalBlocked, activityLog) {
     <div id="map-hover-tooltip" class="map-tooltip" style="position: absolute; display: none; z-index: 100;"></div>
 
     <div class="map-controls">
-      <button class="map-btn" id="map-zoom-in" title="Zoom In">+</button>
-      <button class="map-btn" id="map-zoom-out" title="Zoom Out">−</button>
-      <button class="map-btn reset" id="map-reset-view" title="Center View">🏠</button>
-      <button class="map-btn fit" id="map-focus-threats" title="Scan Threat Nodes">🔍</button>
+      <button class="map-btn" id="map-zoom-in" aria-label="Zoom In on Global Threat Map" title="Zoom In">+</button>
+      <button class="map-btn" id="map-zoom-out" aria-label="Zoom Out on Global Threat Map" title="Zoom Out">−</button>
+      <button class="map-btn reset" id="map-reset-view" aria-label="Reset Map Center View" title="Center View">🏠</button>
+      <button class="map-btn fit" id="map-focus-threats" aria-label="Focus Global Threat Nodes" title="Scan Threat Nodes">🔍</button>
     </div>
 
     <svg id="cyber-world-svg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg"

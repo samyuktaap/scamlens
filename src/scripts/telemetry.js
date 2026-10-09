@@ -1,6 +1,6 @@
 /**
- * DataShadow Telemetry Processor
- * Centralized logic for scoring and bandwidth analytics.
+ * ScamLens Telemetry Processor (telemetry.js)
+ * Centralized logic for scoring, telemetry processing, and bandwidth analytics.
  */
 
 const TelemetryProcessor = {
