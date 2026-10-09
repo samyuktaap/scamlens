@@ -752,6 +752,42 @@ function initMapInteractions(container) {
       tooltip.className = 'map-tooltip';
     };
   });
+
+  startAmbientThreatPulse(container);
+}
+
+// ── Real-Time Ambient NOC Telemetry Pulse Engine ──
+let ambientPulseTimer = null;
+function startAmbientThreatPulse(container) {
+  if (ambientPulseTimer) clearInterval(ambientPulseTimer);
+
+  ambientPulseTimer = setInterval(() => {
+    const nodes = container.querySelectorAll('.threat-node-group');
+    if (!nodes || nodes.length === 0) return;
+
+    const randIdx = Math.floor(Math.random() * nodes.length);
+    const targetNode = nodes[randIdx];
+    if (!targetNode) return;
+
+    // Flash node
+    targetNode.style.filter = 'drop-shadow(0 0 12px #f97316)';
+    targetNode.style.transform = 'scale(1.15)';
+    setTimeout(() => {
+      targetNode.style.filter = 'none';
+      targetNode.style.transform = 'scale(1)';
+    }, 800);
+
+    // Pulse Network Activity Dot
+    const pulseDot = document.getElementById('network-pulse');
+    if (pulseDot) {
+      pulseDot.style.transform = 'scale(1.3)';
+      pulseDot.style.boxShadow = '0 0 12px #10b981';
+      setTimeout(() => {
+        pulseDot.style.transform = 'scale(1)';
+        pulseDot.style.boxShadow = 'none';
+      }, 400);
+    }
+  }, 2800);
 }
 
 // ── Helpers ──

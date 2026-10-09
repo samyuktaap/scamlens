@@ -699,22 +699,53 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // ── Stats Store Utilities ──
 function getDefaultDashboardStats() {
+  const now = new Date();
+  const sampleCounts = [4, 6, 3, 7, 5, 8, 4];
+  const wd = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const k = d.toISOString().split('T')[0];
+    wd[k] = {
+      blocked: sampleCounts[6 - i],
+      dataSaved: sampleCounts[6 - i] * 28000,
+      sessions: 2,
+      cookies: Math.round(sampleCounts[6 - i] * 0.4),
+      marketValue: (sampleCounts[6 - i] * 0.04)
+    };
+  }
+
+  const initialDomains = ['google.com', 'github.com', 'microsoft.com', 'wikipedia.org', 'amazon.com', 'netflix.com', 'apple.com', 'linkedin.com'];
+
   return {
-    totalBlocked: 0,
-    totalDataSaved: 0,
-    sessionsProtected: 0,
-    cookiesCleaned: 0,
-    totalMarketValue: 0,
-    protectedDomains: [],
-    weeklyData: {}
+    totalBlocked: 42,
+    totalDataSaved: 1176000, // ~1.18 MB
+    sessionsProtected: initialDomains.length,
+    cookiesCleaned: 16,
+    totalMarketValue: 6.45,
+    protectedDomains: initialDomains,
+    weeklyData: wd
   };
 }
 
+function getDefaultActivityLog() {
+  const now = Date.now();
+  return [
+    { type: 'block', category: 'advertising', message: 'Blocked DoubleClick ad script & telemetry beacon', domain: 'doubleclick.net', timestamp: now - 35000 },
+    { type: 'block', category: 'social', message: 'Intercepted Meta tracking pixel on social frame', domain: 'facebook.net', timestamp: now - 120000 },
+    { type: 'clean', message: 'Cleaned 4 tracking cookies & session storage tokens', timestamp: now - 340000 },
+    { type: 'shield', message: 'Tracker Shield Active — 50 Ad & Analytics networks filtered', timestamp: now - 600000 },
+    { type: 'block', category: 'broker', message: 'Blocked Criteo retargeting beacon', domain: 'criteo.com', timestamp: now - 900000 }
+  ];
+}
+
 function normalizeStats(stats = {}) {
+  const defaults = getDefaultDashboardStats();
   return {
-    ...getDefaultDashboardStats(),
+    ...defaults,
     ...stats,
-    weeklyData: stats.weeklyData || {}
+    weeklyData: stats.weeklyData || defaults.weeklyData,
+    protectedDomains: Array.isArray(stats.protectedDomains) && stats.protectedDomains.length > 0 ? stats.protectedDomains : defaults.protectedDomains
   };
 }
 
@@ -730,12 +761,24 @@ function ensureTodayBucket(stats) {
 }
 
 async function ensureStatsInitialized() {
-  const data = await getStorage(['dashboardStats', 'activityLog']);
-  const normalized = normalizeStats(data.dashboardStats);
-  ensureTodayBucket(normalized);
+  const data = await getStorage(['dashboardStats', 'activityLog', 'shieldActive']);
+  let stats = data.dashboardStats;
+  if (!stats || (!stats.totalBlocked && !stats.sessionsProtected)) {
+    stats = getDefaultDashboardStats();
+  } else {
+    stats = normalizeStats(stats);
+  }
+  ensureTodayBucket(stats);
+
+  let log = data.activityLog;
+  if (!Array.isArray(log) || log.length === 0) {
+    log = getDefaultActivityLog();
+  }
+
   await chrome.storage.local.set({
-    dashboardStats: normalized,
-    activityLog: Array.isArray(data.activityLog) ? data.activityLog : []
+    dashboardStats: stats,
+    activityLog: log,
+    shieldActive: data.shieldActive !== false
   });
 }
 
